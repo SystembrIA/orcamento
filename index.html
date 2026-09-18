@@ -221,6 +221,9 @@
   .range-btn:hover{ border-color:var(--text-muted); }
   .range-btn.active{ background:var(--text-primary); color:var(--bg); border-color:var(--text-primary); }
 
+  .saldo-mini{ margin-top:14px; max-width:280px; }
+  .saldo-mini .tile{ padding:12px 16px; }
+
   .tooltip{
     position:fixed; z-index:50; pointer-events:none; background:var(--text-primary);
     color:var(--bg); font-size:12px; font-weight:600; padding:6px 10px; border-radius:8px;
@@ -293,6 +296,11 @@
   <section id="tab-graficos" class="tab-panel" hidden>
     <div class="summary-row" id="summary-row-2"></div>
 
+    <div class="chart-card">
+      <h2>Ganho vs. gastos — mês atual</h2>
+      <div id="chart-ganho-gastos"></div>
+      <div id="saldo-mini"></div>
+    </div>
     <div class="chart-card">
       <h2>Fixos vs. supérfluos</h2>
       <div id="chart-split"></div>
@@ -581,6 +589,39 @@
       '</div>';
   }
 
+  function renderGanhoGastos(totals){
+    var el = document.getElementById("chart-ganho-gastos");
+    var saldoEl = document.getElementById("saldo-mini");
+    if(!el || !saldoEl) return;
+    var renda = Number(STATE.config.renda)||0;
+    if(renda<=0 && totals.total<=0){
+      el.innerHTML = '<p class="empty-note">Informe sua renda e seus gastos para ver esta comparação.</p>';
+      saldoEl.innerHTML = "";
+      return;
+    }
+    var data = [
+      { label:"Ganho", value:renda },
+      { label:"Gastos", value:totals.total }
+    ];
+    el.innerHTML = buildBarChartSvg(
+      data,
+      function(d){ return d.label==="Ganho" ? "var(--good)" : "var(--fixo)"; },
+      function(d){ return d.label+" — "+formatMoney(d.value); }
+    );
+    wireTooltips(el);
+
+    var saldo = renda - totals.total;
+    if(renda>0){
+      var cls = saldo>=0 ? "is-good" : "is-bad";
+      var note = saldo>=0 ? "Sobra no mês" : "Estourou o orçamento";
+      saldoEl.innerHTML =
+        '<div class="tile tile-saldo '+cls+'"><div class="tile-label">Saldo do mês</div>' +
+        '<div class="tile-value">'+formatMoney(saldo)+'</div><div class="tile-note">'+note+'</div></div>';
+    } else {
+      saldoEl.innerHTML = '<p class="empty-note">Informe sua renda para ver o saldo.</p>';
+    }
+  }
+
   function buildBarChartSvg(data, colorForRow, tipLabel){
     var W = 600, rowH = 28, gap = 10, step = rowH+gap;
     var padTop = 8, padBottom = 8;
@@ -769,6 +810,7 @@
     renderSummaryInto("summary-row-2", totals);
     document.getElementById("total-fixo-cell").textContent = formatMoney(totals.fixo);
     document.getElementById("total-superfluo-cell").textContent = formatMoney(totals.superfluo);
+    renderGanhoGastos(totals);
     renderSplit(totals);
     renderTop();
     renderCategoria(totals);
