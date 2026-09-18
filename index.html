@@ -224,6 +224,24 @@
   .saldo-mini{ margin-top:14px; max-width:280px; }
   .saldo-mini .tile{ padding:12px 16px; }
 
+  .month-nav{
+    display:flex; align-items:center; gap:8px; margin-bottom:18px;
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:8px 10px; box-shadow:var(--shadow); width:max-content; max-width:100%;
+  }
+  .month-nav-label{ font-weight:700; font-size:14px; min-width:150px; text-align:center; text-transform:capitalize; }
+  .month-nav .btn-ghost{ width:32px; height:32px; display:flex; align-items:center; justify-content:center; padding:0; font-size:16px; line-height:1; }
+  .month-nav-readonly{ font-size:13px; color:var(--text-secondary); margin-bottom:14px; font-weight:600; text-transform:capitalize; }
+
+  .col-parcelas{ width:96px; text-align:center; }
+  .expense-table th.col-parcelas{ text-align:center; }
+  .input-parcelas{
+    width:56px; text-align:center; border:1px solid var(--border); background:var(--surface-2);
+    border-radius:8px; padding:6px 4px; font-size:13px; color:var(--text-primary); outline:none;
+  }
+  .input-parcelas:focus{ border-color:var(--fixo); }
+  .parcela-tag{ font-size:12px; font-weight:600; color:var(--text-secondary); font-variant-numeric:tabular-nums; cursor:help; }
+
   .tooltip{
     position:fixed; z-index:50; pointer-events:none; background:var(--text-primary);
     color:var(--bg); font-size:12px; font-weight:600; padding:6px 10px; border-radius:8px;
@@ -256,6 +274,13 @@
   </nav>
 
   <section id="tab-lancamentos" class="tab-panel">
+    <div class="month-nav" role="group" aria-label="Navegação de mês">
+      <button type="button" id="mes-prev" class="btn-ghost" aria-label="Mês anterior">‹</button>
+      <div class="month-nav-label" id="mes-nav-label">—</div>
+      <button type="button" id="mes-next" class="btn-ghost" aria-label="Próximo mês">›</button>
+      <button type="button" id="mes-hoje-btn" class="btn-ghost">Hoje</button>
+    </div>
+
     <div class="summary-row" id="summary-row-1"></div>
 
     <div id="examples-banner" class="examples-banner" hidden>
@@ -270,9 +295,9 @@
       </div>
       <div class="table-wrap">
         <table class="expense-table">
-          <thead><tr><th>Descrição</th><th>Categoria</th><th class="col-valor">Valor</th><th></th></tr></thead>
+          <thead><tr><th>Descrição</th><th>Categoria</th><th class="col-valor">Valor</th><th class="col-parcelas">Parcelas</th><th></th></tr></thead>
           <tbody id="tbody-fixo"></tbody>
-          <tfoot><tr><td colspan="2">Total gastos fixos</td><td class="col-valor" id="total-fixo-cell">R$ 0,00</td><td></td></tr></tfoot>
+          <tfoot><tr><td colspan="2">Total gastos fixos</td><td class="col-valor" id="total-fixo-cell">R$ 0,00</td><td></td><td></td></tr></tfoot>
         </table>
       </div>
     </div>
@@ -284,20 +309,21 @@
       </div>
       <div class="table-wrap">
         <table class="expense-table">
-          <thead><tr><th>Descrição</th><th>Categoria</th><th class="col-valor">Valor</th><th></th></tr></thead>
+          <thead><tr><th>Descrição</th><th>Categoria</th><th class="col-valor">Valor</th><th class="col-parcelas">Parcelas</th><th></th></tr></thead>
           <tbody id="tbody-superfluo"></tbody>
-          <tfoot><tr><td colspan="2">Total gastos supérfluos</td><td class="col-valor" id="total-superfluo-cell">R$ 0,00</td><td></td></tr></tfoot>
+          <tfoot><tr><td colspan="2">Total gastos supérfluos</td><td class="col-valor" id="total-superfluo-cell">R$ 0,00</td><td></td><td></td></tr></tfoot>
         </table>
       </div>
     </div>
-    <p class="footer-note">Os dados ficam salvos neste painel — pode fechar e voltar quando quiser.</p>
+    <p class="footer-note">Os dados ficam salvos neste painel, mês a mês — pode fechar e voltar quando quiser. Em "Parcelas", informe em quantos meses seguintes esse gasto deve se repetir automaticamente.</p>
   </section>
 
   <section id="tab-graficos" class="tab-panel" hidden>
+    <div class="month-nav-readonly" id="mes-nav-label-graficos">—</div>
     <div class="summary-row" id="summary-row-2"></div>
 
     <div class="chart-card">
-      <h2>Ganho vs. gastos — mês atual</h2>
+      <h2>Ganho vs. gastos — <span id="ganho-gastos-mes-label">mês atual</span></h2>
       <div id="chart-ganho-gastos"></div>
       <div id="saldo-mini"></div>
     </div>
@@ -327,7 +353,7 @@
           <button type="button" class="range-btn" data-months="12">12 meses</button>
         </div>
       </div>
-      <p class="empty-note" id="timeline-note">A linha do tempo sempre abre no mês atual e avança a partir dele. Presumimos que a renda e os gastos já lançados se repetem nos meses seguintes. Cada vela mostra o saldo acumulado: verde quando o mês soma, vermelho quando consome reservas.</p>
+      <p class="empty-note" id="timeline-note">A linha do tempo sempre abre no mês atual e avança a partir dele, usando os gastos já lançados em cada mês (inclusive parcelas futuras). Meses sem lançamentos aparecem com gasto zero. Cada vela mostra o saldo acumulado: verde quando o mês soma, vermelho quando consome reservas.</p>
       <div class="chart-scroll"><div id="chart-timeline"></div></div>
       <div class="split-legend" id="timeline-legend"></div>
     </div>
@@ -358,6 +384,7 @@
   var db = null;
   var mode = "local";
   var LOCAL_KEY = "orcamento-domestico-v1";
+  var currentViewMonth = firstOfMonth(new Date());
 
   var fmt = new Intl.NumberFormat("pt-BR", { style:"currency", currency:"BRL" });
   function formatMoney(v){ return fmt.format(Number(v)||0); }
@@ -371,6 +398,25 @@
   }
   document.getElementById("mes-label").textContent = monthLabel();
 
+  /* ---------- month helpers (per-month ledger) ---------- */
+
+  function firstOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
+  function mesKeyOf(d){ return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0"); }
+  function mesLabelOf(d){
+    var s = d.toLocaleDateString("pt-BR", { month:"long", year:"numeric" });
+    return s.charAt(0).toUpperCase()+s.slice(1);
+  }
+  function addMonthsToKey(key, n){
+    var parts = String(key).split("-");
+    var y = parseInt(parts[0],10), m = parseInt(parts[1],10)-1;
+    return mesKeyOf(new Date(y, m+n, 1));
+  }
+  function viewedMonthKey(){ return mesKeyOf(currentViewMonth); }
+  function itemsForViewedMonth(){
+    var key = viewedMonthKey();
+    return STATE.items.filter(function(it){ return (it.mesRef||"")===key; });
+  }
+
   /* ---------- persistence layer ---------- */
 
   function loadLocal(){
@@ -380,8 +426,18 @@
         var parsed = JSON.parse(raw);
         STATE.items = Array.isArray(parsed.items) ? parsed.items : [];
         STATE.config = parsed.config || { renda:0 };
+        var todayKey = mesKeyOf(new Date());
+        var migrated = false;
+        STATE.items.forEach(function(it){
+          if(!it.mesRef){ it.mesRef = todayKey; migrated = true; }
+          if(!it.parcelaTotal){ it.parcelaTotal = 1; it.parcelaIndex = 1; it.parcelaGrupo = null; migrated = true; }
+        });
+        if(migrated) saveLocal();
       } else {
-        STATE.items = EXAMPLE_ITEMS.map(function(it,i){ return Object.assign({id:"local-seed-"+i, createdAt: Date.now()+i}, it); });
+        var seedKey = mesKeyOf(new Date());
+        STATE.items = EXAMPLE_ITEMS.map(function(it,i){
+          return Object.assign({id:"local-seed-"+i, createdAt: Date.now()+i, mesRef: seedKey, parcelaTotal:1, parcelaIndex:1, parcelaGrupo:null}, it);
+        });
         STATE.config = { renda: 0 };
         saveLocal();
       }
@@ -400,7 +456,7 @@
       return hasClaude ? window.claude.use("db").catch(function(){ return null; }) : Promise.resolve(null);
     },
     addItem: function(tipo){
-      var item = { desc:"", categoria: CATEGORIAS[CATEGORIAS.length-1], tipo: tipo, valor:0, isExample:false, createdAt: Date.now() };
+      var item = { desc:"", categoria: CATEGORIAS[CATEGORIAS.length-1], tipo: tipo, valor:0, isExample:false, createdAt: Date.now(), mesRef: viewedMonthKey(), parcelaTotal:1, parcelaIndex:1, parcelaGrupo:null };
       if(mode==="db"){
         var ref = db.collection("items").doc();
         var full = Object.assign({id:ref.id}, item);
@@ -416,6 +472,29 @@
         createRow(localFull);
         updateDerived();
         return id;
+      }
+    },
+    setParcelas: function(id, n){
+      var item = STATE.items.find(function(x){ return x.id===id; });
+      if(!item || (Number(item.parcelaTotal)||1) > 1 || n<=1) return;
+      var patch = { parcelaGrupo:id, parcelaIndex:1, parcelaTotal:n };
+      var siblings = [];
+      for(var k=1;k<n;k++){
+        siblings.push({
+          desc:item.desc, categoria:item.categoria, tipo:item.tipo, valor:item.valor, isExample:false,
+          createdAt: Date.now()+k, mesRef: addMonthsToKey(item.mesRef, k),
+          parcelaGrupo:id, parcelaIndex:k+1, parcelaTotal:n
+        });
+      }
+      if(mode==="db"){
+        db.collection("items").doc(id).update(patch).catch(function(e){ console.error(e); });
+        siblings.forEach(function(sib){ db.collection("items").add(sib).catch(function(e){ console.error(e); }); });
+      } else {
+        Object.assign(item, patch);
+        var withIds = siblings.map(function(sib, i){ return Object.assign({id:"local-"+Date.now()+"-p"+i+"-"+Math.random().toString(36).slice(2,7)}, sib); });
+        STATE.items = STATE.items.concat(withIds);
+        saveLocal();
+        refreshMonthView();
       }
     },
     updateItem: function(id, patch){
@@ -465,16 +544,14 @@
       var id = ch.doc.id;
       if(ch.type==="removed"){
         STATE.items = STATE.items.filter(function(x){ return x.id!==id; });
-        removeRow(id);
         return;
       }
       var data = ch.doc.data() || {};
       var full = Object.assign({id:id}, data);
       var idx = STATE.items.findIndex(function(x){ return x.id===id; });
       if(idx===-1){ STATE.items.push(full); } else { STATE.items[idx]=full; }
-      if(rowsById[id]){ updateRow(id, full); } else { createRow(full); }
     });
-    updateDerived();
+    refreshMonthView();
   }
 
   /* ---------- row rendering ---------- */
@@ -483,6 +560,15 @@
     return CATEGORIAS.map(function(c){
       return '<option value="'+escapeAttr(c)+'"'+(c===selected?" selected":"")+'>'+escapeXml(c)+"</option>";
     }).join("");
+  }
+
+  function parcelasCellHtml(item){
+    var total = Number(item.parcelaTotal)||1;
+    if(total>1){
+      var idx = Number(item.parcelaIndex)||1;
+      return '<span class="parcela-tag" title="Parcela gerada automaticamente. Para remover uma parcela específica, exclua a linha correspondente.">'+idx+'/'+total+'</span>';
+    }
+    return '<input class="input-parcelas" type="number" min="1" step="1" value="1" title="Em quantos meses seguintes repetir este gasto">';
   }
 
   function createRow(item){
@@ -494,16 +580,20 @@
       '<td><input class="input-desc" type="text" placeholder="Ex.: Aluguel" value="'+escapeAttr(item.desc)+'"></td>' +
       '<td><select class="input-categoria">'+categoriaOptions(item.categoria)+'</select></td>' +
       '<td class="col-valor"><div class="money-input small"><span>R$</span><input class="input-valor" type="number" min="0" step="0.01" value="'+(Number(item.valor)||0)+'"></div></td>' +
+      '<td class="col-parcelas">'+parcelasCellHtml(item)+'</td>' +
       '<td><button class="btn-del" aria-label="Remover linha" title="Remover">✕</button></td>';
     tbody.appendChild(tr);
 
     var descInput = tr.querySelector(".input-desc");
     var catSelect = tr.querySelector(".input-categoria");
     var valorInput = tr.querySelector(".input-valor");
+    var parcelasInput = tr.querySelector(".input-parcelas");
     var delBtn = tr.querySelector(".btn-del");
     var descTimer = null;
 
     descInput.addEventListener("input", function(){
+      var it = STATE.items.find(function(x){ return x.id===item.id; });
+      if(it) it.desc = descInput.value;
       clearTimeout(descTimer);
       descTimer = setTimeout(function(){ store.updateItem(item.id, { desc: descInput.value }); }, 500);
     });
@@ -513,24 +603,17 @@
       if(isNaN(v) || v<0) v = 0;
       store.updateItem(item.id, { valor: v });
     });
+    if(parcelasInput){
+      parcelasInput.addEventListener("change", function(){
+        var n = parseInt(parcelasInput.value, 10);
+        if(isNaN(n) || n<1){ n = 1; }
+        if(n>1){ store.setParcelas(item.id, n); }
+        else { parcelasInput.value = 1; }
+      });
+    }
     delBtn.addEventListener("click", function(){ store.deleteItem(item.id); });
 
     rowsById[item.id] = { tr:tr, descInput:descInput, catSelect:catSelect, valorInput:valorInput };
-  }
-
-  function updateRow(id, data){
-    var row = rowsById[id];
-    if(!row) return;
-    if(document.activeElement !== row.descInput && data.desc !== undefined && row.descInput.value !== data.desc){
-      row.descInput.value = data.desc;
-    }
-    if(document.activeElement !== row.catSelect && data.categoria !== undefined && row.catSelect.value !== data.categoria){
-      row.catSelect.value = data.categoria;
-    }
-    if(document.activeElement !== row.valorInput && data.valor !== undefined){
-      var num = Number(data.valor)||0;
-      if(parseFloat(row.valorInput.value)!==num) row.valorInput.value = num;
-    }
   }
 
   function removeRow(id){
@@ -544,7 +627,7 @@
   function computeTotals(){
     var fixo=0, superfluo=0;
     var byCategoria = {};
-    STATE.items.forEach(function(it){
+    itemsForViewedMonth().forEach(function(it){
       var v = Number(it.valor)||0;
       if(it.tipo==="fixo") fixo+=v; else superfluo+=v;
       var cat = it.categoria || "Outros";
@@ -668,7 +751,7 @@
 
   function renderTop(){
     var el = document.getElementById("chart-top");
-    var data = STATE.items
+    var data = itemsForViewedMonth()
       .map(function(it){ return { label: it.desc||"(sem descrição)", value:Number(it.valor)||0, tipo:it.tipo, categoria:it.categoria }; })
       .filter(function(d){ return d.value>0; })
       .sort(function(a,b){ return b.value-a.value; })
@@ -700,16 +783,18 @@
     return s.charAt(0).toUpperCase()+s.slice(1);
   }
 
-  function computeTimelineMonths(count, totals){
+  function computeTimelineMonths(count){
     var renda = Number(STATE.config.renda)||0;
-    var gastos = totals.total;
-    var saldoMes = renda - gastos;
     var months = [];
     var acumulado = 0;
-    var base = new Date();
-    base.setDate(1);
+    var base = firstOfMonth(new Date());
     for(var i=0;i<count;i++){
       var d = new Date(base.getFullYear(), base.getMonth()+i, 1);
+      var key = mesKeyOf(d);
+      var gastos = STATE.items
+        .filter(function(it){ return (it.mesRef||"")===key; })
+        .reduce(function(sum,it){ return sum+(Number(it.valor)||0); }, 0);
+      var saldoMes = renda - gastos;
       var open = acumulado;
       var close = acumulado + saldoMes;
       months.push({
@@ -781,17 +866,17 @@
 
   var timelineMonthsSelected = 3;
 
-  function renderTimeline(totals){
+  function renderTimeline(){
     var el = document.getElementById("chart-timeline");
     var legendEl = document.getElementById("timeline-legend");
     if(!el || !legendEl) return;
     var renda = Number(STATE.config.renda)||0;
-    if(renda<=0 && totals.total<=0){
+    if(renda<=0 && STATE.items.length===0){
       el.innerHTML = '<p class="empty-note">Informe sua renda e seus gastos para ver a linha do tempo.</p>';
       legendEl.innerHTML = "";
       return;
     }
-    var months = computeTimelineMonths(timelineMonthsSelected, totals);
+    var months = computeTimelineMonths(timelineMonthsSelected);
     el.innerHTML = buildCandlestickSvg(months);
     wireTooltips(el, ".candle-g");
     legendEl.innerHTML =
@@ -800,7 +885,7 @@
   }
 
   function updateExamplesBanner(){
-    var hasExamples = STATE.items.some(function(it){ return it.isExample; });
+    var hasExamples = itemsForViewedMonth().some(function(it){ return it.isExample; });
     document.getElementById("examples-banner").hidden = !hasExamples;
   }
 
@@ -814,17 +899,57 @@
     renderSplit(totals);
     renderTop();
     renderCategoria(totals);
-    renderTimeline(totals);
+    renderTimeline();
+    updateMonthNavLabel();
     updateExamplesBanner();
   }
 
-  function onConfigChange(){
+  function syncRendaInput(){
     var rendaInput = document.getElementById("renda-input");
     if(document.activeElement !== rendaInput){
       var r = Number(STATE.config.renda)||0;
       rendaInput.value = r ? r : "";
     }
+  }
+
+  function onConfigChange(){
+    syncRendaInput();
     updateDerived();
+  }
+
+  /* ---------- month navigation ---------- */
+
+  function updateMonthNavLabel(){
+    var label = mesLabelOf(currentViewMonth);
+    var isToday = viewedMonthKey() === mesKeyOf(new Date());
+    var navLabel = document.getElementById("mes-nav-label");
+    if(navLabel) navLabel.textContent = label + (isToday ? " (atual)" : "");
+    var navLabelGraficos = document.getElementById("mes-nav-label-graficos");
+    if(navLabelGraficos) navLabelGraficos.textContent = "Exibindo dados de: " + label + (isToday ? " (mês atual)" : "");
+    var ganhoGastosLabel = document.getElementById("ganho-gastos-mes-label");
+    if(ganhoGastosLabel) ganhoGastosLabel.textContent = label;
+  }
+
+  function refreshMonthView(){
+    var tbodyFixo = document.getElementById("tbody-fixo");
+    var tbodySuperfluo = document.getElementById("tbody-superfluo");
+    if(tbodyFixo) tbodyFixo.innerHTML = "";
+    if(tbodySuperfluo) tbodySuperfluo.innerHTML = "";
+    rowsById = {};
+    itemsForViewedMonth()
+      .sort(function(a,b){ return (a.createdAt||0)-(b.createdAt||0); })
+      .forEach(function(it){ createRow(it); });
+    updateDerived();
+  }
+
+  function goToMonth(delta){
+    currentViewMonth = new Date(currentViewMonth.getFullYear(), currentViewMonth.getMonth()+delta, 1);
+    refreshMonthView();
+  }
+
+  function goToToday(){
+    currentViewMonth = firstOfMonth(new Date());
+    refreshMonthView();
   }
 
   /* ---------- static UI wiring ---------- */
@@ -844,9 +969,13 @@
       document.querySelectorAll(".range-btn").forEach(function(b){ b.classList.remove("active"); });
       btn.classList.add("active");
       timelineMonthsSelected = parseInt(btn.dataset.months, 10) || 3;
-      renderTimeline(computeTotals());
+      renderTimeline();
     });
   });
+
+  document.getElementById("mes-prev").addEventListener("click", function(){ goToMonth(-1); });
+  document.getElementById("mes-next").addEventListener("click", function(){ goToMonth(1); });
+  document.getElementById("mes-hoje-btn").addEventListener("click", goToToday);
 
   document.querySelectorAll(".btn-add").forEach(function(btn){
     btn.addEventListener("click", function(){
@@ -882,8 +1011,9 @@
         if(!snap.exists){
           return cfgRef.set({ renda:0 }).then(function(){
             var chain = Promise.resolve();
+            var seedKey = mesKeyOf(new Date());
             EXAMPLE_ITEMS.forEach(function(it, i){
-              chain = chain.then(function(){ return db.collection("items").add(Object.assign({}, it, { createdAt: Date.now()+i })); });
+              chain = chain.then(function(){ return db.collection("items").add(Object.assign({}, it, { createdAt: Date.now()+i, mesRef: seedKey, parcelaTotal:1, parcelaIndex:1, parcelaGrupo:null })); });
             });
             return chain;
           });
@@ -900,8 +1030,9 @@
     } else {
       mode = "local";
       loadLocal();
-      STATE.items.forEach(function(it){ createRow(it); });
-      onConfigChange();
+      currentViewMonth = firstOfMonth(new Date());
+      syncRendaInput();
+      refreshMonthView();
     }
   });
 
