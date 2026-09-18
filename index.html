@@ -201,6 +201,29 @@
   .bar-value{ fill:var(--text-primary); font-size:12px; font-weight:600; font-family:var(--font-body); font-variant-numeric:tabular-nums; }
   .bar-hit{ cursor:pointer; }
 
+  .chart-scroll{ overflow-x:auto; }
+  svg.candle-chart{ display:block; height:auto; flex:none; }
+  .candle-wick{ stroke:var(--text-muted); stroke-width:1.5; }
+  .candle-body.candle-up{ fill:var(--good); }
+  .candle-body.candle-down{ fill:var(--critical); }
+  .candle-body.candle-flat{ fill:var(--text-muted); }
+  .candle-axis-line{ stroke:var(--grid); stroke-width:1; }
+  .candle-zero-line{ stroke:var(--text-muted); stroke-width:1; stroke-dasharray:4 3; }
+  .candle-axis-label{ fill:var(--text-muted); font-size:11px; font-family:var(--font-body); }
+  .candle-month-label{ fill:var(--text-secondary); font-size:11px; font-family:var(--font-body); }
+  .candle-hit{ cursor:pointer; }
+
+  .timeline-controls{ display:flex; flex-wrap:wrap; gap:6px; }
+  .range-btn{
+    appearance:none; border:1px solid var(--border); background:var(--surface); color:var(--text-secondary);
+    border-radius:8px; padding:6px 12px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap;
+  }
+  .range-btn:hover{ border-color:var(--text-muted); }
+  .range-btn.active{ background:var(--text-primary); color:var(--bg); border-color:var(--text-primary); }
+
+  .saldo-mini{ margin-top:14px; max-width:280px; }
+  .saldo-mini .tile{ padding:12px 16px; }
+
   .tooltip{
     position:fixed; z-index:50; pointer-events:none; background:var(--text-primary);
     color:var(--bg); font-size:12px; font-weight:600; padding:6px 10px; border-radius:8px;
@@ -229,6 +252,7 @@
   <nav class="tabs" role="tablist">
     <button class="tab-btn active" data-tab="lancamentos" role="tab" aria-selected="true">Lançamentos</button>
     <button class="tab-btn" data-tab="graficos" role="tab" aria-selected="false">Gráficos</button>
+    <button class="tab-btn" data-tab="timeline" role="tab" aria-selected="false">Linha do tempo</button>
   </nav>
 
   <section id="tab-lancamentos" class="tab-panel">
@@ -273,6 +297,11 @@
     <div class="summary-row" id="summary-row-2"></div>
 
     <div class="chart-card">
+      <h2>Ganho vs. gastos — mês atual</h2>
+      <div id="chart-ganho-gastos"></div>
+      <div id="saldo-mini"></div>
+    </div>
+    <div class="chart-card">
       <h2>Fixos vs. supérfluos</h2>
       <div id="chart-split"></div>
     </div>
@@ -283,6 +312,24 @@
     <div class="chart-card">
       <h2>Gastos por categoria</h2>
       <div id="chart-categoria"></div>
+    </div>
+  </section>
+
+  <section id="tab-timeline" class="tab-panel" hidden>
+    <div class="chart-card">
+      <div class="card-head">
+        <h2>Saldo projetado — mês a mês</h2>
+        <div class="timeline-controls" id="timeline-range-buttons" role="group" aria-label="Período da linha do tempo">
+          <button type="button" class="range-btn" data-months="1">Mês atual</button>
+          <button type="button" class="range-btn" data-months="2">Próximo mês</button>
+          <button type="button" class="range-btn active" data-months="3">Próximos 3 meses</button>
+          <button type="button" class="range-btn" data-months="6">6 meses</button>
+          <button type="button" class="range-btn" data-months="12">12 meses</button>
+        </div>
+      </div>
+      <p class="empty-note" id="timeline-note">A linha do tempo sempre abre no mês atual e avança a partir dele. Presumimos que a renda e os gastos já lançados se repetem nos meses seguintes. Cada vela mostra o saldo acumulado: verde quando o mês soma, vermelho quando consome reservas.</p>
+      <div class="chart-scroll"><div id="chart-timeline"></div></div>
+      <div class="split-legend" id="timeline-legend"></div>
     </div>
   </section>
 
@@ -542,6 +589,39 @@
       '</div>';
   }
 
+  function renderGanhoGastos(totals){
+    var el = document.getElementById("chart-ganho-gastos");
+    var saldoEl = document.getElementById("saldo-mini");
+    if(!el || !saldoEl) return;
+    var renda = Number(STATE.config.renda)||0;
+    if(renda<=0 && totals.total<=0){
+      el.innerHTML = '<p class="empty-note">Informe sua renda e seus gastos para ver esta comparação.</p>';
+      saldoEl.innerHTML = "";
+      return;
+    }
+    var data = [
+      { label:"Ganho", value:renda },
+      { label:"Gastos", value:totals.total }
+    ];
+    el.innerHTML = buildBarChartSvg(
+      data,
+      function(d){ return d.label==="Ganho" ? "var(--good)" : "var(--fixo)"; },
+      function(d){ return d.label+" — "+formatMoney(d.value); }
+    );
+    wireTooltips(el);
+
+    var saldo = renda - totals.total;
+    if(renda>0){
+      var cls = saldo>=0 ? "is-good" : "is-bad";
+      var note = saldo>=0 ? "Sobra no mês" : "Estourou o orçamento";
+      saldoEl.innerHTML =
+        '<div class="tile tile-saldo '+cls+'"><div class="tile-label">Saldo do mês</div>' +
+        '<div class="tile-value">'+formatMoney(saldo)+'</div><div class="tile-note">'+note+'</div></div>';
+    } else {
+      saldoEl.innerHTML = '<p class="empty-note">Informe sua renda para ver o saldo.</p>';
+    }
+  }
+
   function buildBarChartSvg(data, colorForRow, tipLabel){
     var W = 600, rowH = 28, gap = 10, step = rowH+gap;
     var padTop = 8, padBottom = 8;
@@ -566,8 +646,8 @@
     return '<svg viewBox="0 0 '+W+' '+H+'" class="bar-chart" role="img" aria-label="gráfico de barras">'+rows+'</svg>';
   }
 
-  function wireTooltips(container){
-    container.querySelectorAll(".bar-g").forEach(function(g){
+  function wireTooltips(container, selector){
+    container.querySelectorAll(selector || ".bar-g").forEach(function(g){
       g.addEventListener("mouseenter", function(e){ showTooltip(e, g.getAttribute("data-tip")); });
       g.addEventListener("mousemove", function(e){ moveTooltip(e); });
       g.addEventListener("mouseleave", hideTooltip);
@@ -609,6 +689,116 @@
     wireTooltips(el);
   }
 
+  function formatMoneyCompact(v){
+    try{
+      return new Intl.NumberFormat("pt-BR", { style:"currency", currency:"BRL", notation:"compact", maximumFractionDigits:1 }).format(v);
+    } catch(e){ return formatMoney(v); }
+  }
+
+  function monthShortLabel(d){
+    var s = d.toLocaleDateString("pt-BR", { month:"short", year:"2-digit" }).replace(".","");
+    return s.charAt(0).toUpperCase()+s.slice(1);
+  }
+
+  function computeTimelineMonths(count, totals){
+    var renda = Number(STATE.config.renda)||0;
+    var gastos = totals.total;
+    var saldoMes = renda - gastos;
+    var months = [];
+    var acumulado = 0;
+    var base = new Date();
+    base.setDate(1);
+    for(var i=0;i<count;i++){
+      var d = new Date(base.getFullYear(), base.getMonth()+i, 1);
+      var open = acumulado;
+      var close = acumulado + saldoMes;
+      months.push({
+        label: monthShortLabel(d),
+        renda: renda,
+        gastos: gastos,
+        saldoMes: saldoMes,
+        open: open,
+        close: close,
+        high: Math.max(open, close),
+        low: Math.min(open, close),
+        acumuladoFim: close
+      });
+      acumulado = close;
+    }
+    return months;
+  }
+
+  function buildCandlestickSvg(months){
+    if(!months.length) return "";
+    var marginLeft=92, marginRight=12, marginTop=12, marginBottom=28;
+    var plotW = Math.max(320, months.length*46);
+    var W = marginLeft+plotW+marginRight;
+    var plotH = 220;
+    var H = marginTop+plotH+marginBottom;
+
+    var values = [0];
+    months.forEach(function(m){ values.push(m.high, m.low); });
+    var maxV = Math.max.apply(null, values);
+    var minV = Math.min.apply(null, values);
+    if(maxV===minV){ maxV+=100; minV-=100; }
+    var pad = (maxV-minV)*0.1;
+    maxV+=pad; minV-=pad;
+
+    function yFor(v){ return marginTop + (1-(v-minV)/(maxV-minV))*plotH; }
+
+    var step = plotW/months.length;
+    var bodyW = Math.min(28, step*0.55);
+
+    var gridCount = 4, gridLines = "";
+    for(var g=0; g<=gridCount; g++){
+      var v = minV + (maxV-minV)*(g/gridCount);
+      var y = yFor(v);
+      gridLines += '<line x1="'+marginLeft+'" y1="'+y+'" x2="'+(marginLeft+plotW)+'" y2="'+y+'" class="candle-axis-line"></line>';
+      gridLines += '<text x="'+(marginLeft-10)+'" y="'+(y+4)+'" text-anchor="end" class="candle-axis-label">'+escapeXml(formatMoneyCompact(v))+'</text>';
+    }
+    var zeroY = yFor(0);
+    var zeroLine = (0>minV && 0<maxV) ? '<line x1="'+marginLeft+'" y1="'+zeroY+'" x2="'+(marginLeft+plotW)+'" y2="'+zeroY+'" class="candle-zero-line"></line>' : "";
+
+    var candles = months.map(function(m,i){
+      var cx = marginLeft + step*i + step/2;
+      var yHigh = yFor(m.high), yLow = yFor(m.low);
+      var yOpen = yFor(m.open), yClose = yFor(m.close);
+      var top = Math.min(yOpen,yClose), bh = Math.max(2, Math.abs(yClose-yOpen));
+      var cls = m.saldoMes>0.005 ? "candle-up" : (m.saldoMes<-0.005 ? "candle-down" : "candle-flat");
+      var tip = m.label+" — Ganho "+formatMoney(m.renda)+" · Gastos "+formatMoney(m.gastos)+" · Saldo do mês "+formatMoney(m.saldoMes)+" · Acumulado "+formatMoney(m.acumuladoFim);
+      return '<g class="candle-g" data-tip="'+escapeAttr(tip)+'">' +
+        '<line x1="'+cx+'" y1="'+yHigh+'" x2="'+cx+'" y2="'+yLow+'" class="candle-wick"></line>' +
+        '<rect x="'+(cx-bodyW/2)+'" y="'+top+'" width="'+bodyW+'" height="'+bh+'" rx="2" class="candle-body '+cls+'"></rect>' +
+        '<text x="'+cx+'" y="'+(marginTop+plotH+18)+'" text-anchor="middle" class="candle-month-label">'+escapeXml(m.label)+'</text>' +
+        '<rect x="'+(marginLeft+step*i)+'" y="0" width="'+step+'" height="'+H+'" fill="transparent" class="candle-hit"></rect>' +
+      '</g>';
+    }).join("");
+
+    return '<svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" class="candle-chart" role="img" aria-label="gráfico de velas do saldo mês a mês">' +
+      gridLines + zeroLine + candles +
+    '</svg>';
+  }
+
+  var timelineMonthsSelected = 3;
+
+  function renderTimeline(totals){
+    var el = document.getElementById("chart-timeline");
+    var legendEl = document.getElementById("timeline-legend");
+    if(!el || !legendEl) return;
+    var renda = Number(STATE.config.renda)||0;
+    if(renda<=0 && totals.total<=0){
+      el.innerHTML = '<p class="empty-note">Informe sua renda e seus gastos para ver a linha do tempo.</p>';
+      legendEl.innerHTML = "";
+      return;
+    }
+    var months = computeTimelineMonths(timelineMonthsSelected, totals);
+    el.innerHTML = buildCandlestickSvg(months);
+    wireTooltips(el, ".candle-g");
+    legendEl.innerHTML =
+      '<div class="legend-item"><span class="dot" style="background:var(--good)"></span>Mês positivo — aumenta o saldo acumulado</div>' +
+      '<div class="legend-item"><span class="dot" style="background:var(--critical)"></span>Mês negativo — consome o saldo acumulado</div>';
+  }
+
   function updateExamplesBanner(){
     var hasExamples = STATE.items.some(function(it){ return it.isExample; });
     document.getElementById("examples-banner").hidden = !hasExamples;
@@ -620,9 +810,11 @@
     renderSummaryInto("summary-row-2", totals);
     document.getElementById("total-fixo-cell").textContent = formatMoney(totals.fixo);
     document.getElementById("total-superfluo-cell").textContent = formatMoney(totals.superfluo);
+    renderGanhoGastos(totals);
     renderSplit(totals);
     renderTop();
     renderCategoria(totals);
+    renderTimeline(totals);
     updateExamplesBanner();
   }
 
@@ -641,8 +833,18 @@
     btn.addEventListener("click", function(){
       document.querySelectorAll(".tab-btn").forEach(function(b){ b.classList.remove("active"); b.setAttribute("aria-selected","false"); });
       btn.classList.add("active"); btn.setAttribute("aria-selected","true");
-      document.getElementById("tab-lancamentos").hidden = btn.dataset.tab!=="lancamentos";
-      document.getElementById("tab-graficos").hidden = btn.dataset.tab!=="graficos";
+      document.querySelectorAll(".tab-panel").forEach(function(panel){
+        panel.hidden = panel.id !== "tab-"+btn.dataset.tab;
+      });
+    });
+  });
+
+  document.querySelectorAll(".range-btn").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      document.querySelectorAll(".range-btn").forEach(function(b){ b.classList.remove("active"); });
+      btn.classList.add("active");
+      timelineMonthsSelected = parseInt(btn.dataset.months, 10) || 3;
+      renderTimeline(computeTotals());
     });
   });
 
