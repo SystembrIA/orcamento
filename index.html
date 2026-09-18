@@ -1,5 +1,38 @@
 <title>Orçamento Doméstico</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-app-compat.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-database-compat.min.js"></script>
+<script src="https://systembria.github.io/just-burger-producao/js/firebase_v2.js?v=20260418"></script>
+<script src="https://systembria.github.io/just-burger-producao/js/auth-guard.js?v=20260418"></script>
+<script>
+(function(){
+  "use strict";
+  var HUB_URL = "https://systembria.github.io/hub/";
+  var PAPEIS_OK = ["admin"];
+  var SAFE_HOSTS = ["localhost","127.0.0.1","gitpod","preview","genspark"];
+  var isSafe = SAFE_HOSTS.some(function(s){ return (location.hostname||"").indexOf(s)!==-1; })
+    || location.protocol === "blob:" || location.protocol === "file:";
+
+  try{
+    var params = new URLSearchParams(location.search);
+    var token = params.get("_jbs");
+    if(token){
+      var json = decodeURIComponent(escape(atob(decodeURIComponent(token))));
+      var sess = JSON.parse(json);
+      if(sess && sess.username && sess.papel && typeof JbAuth !== "undefined"){ JbAuth.save(sess); }
+    }
+  } catch(e){}
+
+  var user = null;
+  try{ if(typeof JbAuth !== "undefined") user = JbAuth.read(); } catch(e){}
+
+  if(!user && !isSafe){ location.replace(HUB_URL + "?_acesso=negado"); }
+  else if(user && PAPEIS_OK.indexOf(user.papel)===-1){
+    if(typeof JbAuth !== "undefined") JbAuth.logout(HUB_URL + "?_acesso=negado");
+    else location.replace(HUB_URL + "?_acesso=negado");
+  }
+})();
+</script>
 <style>
   :root{
     color-scheme: light;
@@ -459,20 +492,26 @@
     try{ localStorage.setItem(LOCAL_KEY, JSON.stringify({items:STATE.items, config:STATE.config})); } catch(e){}
   }
 
+  var FIREBASE_PATH = "orcamento";
+
   var store = {
     init: function(){
-      var hasClaude = typeof window !== "undefined" && window.claude && typeof window.claude.use === "function";
-      return hasClaude ? window.claude.use("db").catch(function(){ return null; }) : Promise.resolve(null);
+      try{
+        if(typeof firebase !== "undefined" && firebase.apps && firebase.apps.length && typeof firebase.database === "function"){
+          return Promise.resolve(firebase.database());
+        }
+      } catch(e){ console.error(e); }
+      return Promise.resolve(null);
     },
     addItem: function(tipo){
       var item = { desc:"", categoria: CATEGORIAS[CATEGORIAS.length-1], tipo: tipo, valor:0, isExample:false, createdAt: Date.now(), mesRef: viewedMonthKey(), parcelaTotal:1, parcelaIndex:1, parcelaGrupo:null };
-      if(mode==="db"){
-        var ref = db.collection("items").doc();
-        var full = Object.assign({id:ref.id}, item);
+      if(mode==="firebase"){
+        var ref = db.ref(FIREBASE_PATH+"/items").push();
+        var full = Object.assign({id:ref.key}, item);
         STATE.items.push(full);
         createRow(full);
         ref.set(item).catch(function(e){ console.error(e); });
-        return ref.id;
+        return ref.key;
       } else {
         var id = "local-"+Date.now()+"-"+Math.random().toString(36).slice(2,7);
         var localFull = Object.assign({id:id}, item);
@@ -495,9 +534,9 @@
           parcelaGrupo:id, parcelaIndex:k+1, parcelaTotal:n
         });
       }
-      if(mode==="db"){
-        db.collection("items").doc(id).update(patch).catch(function(e){ console.error(e); });
-        siblings.forEach(function(sib){ db.collection("items").add(sib).catch(function(e){ console.error(e); }); });
+      if(mode==="firebase"){
+        db.ref(FIREBASE_PATH+"/items/"+id).update(patch).catch(function(e){ console.error(e); });
+        siblings.forEach(function(sib){ db.ref(FIREBASE_PATH+"/items").push(sib).catch(function(e){ console.error(e); }); });
       } else {
         Object.assign(item, patch);
         var withIds = siblings.map(function(sib, i){ return Object.assign({id:"local-"+Date.now()+"-p"+i+"-"+Math.random().toString(36).slice(2,7)}, sib); });
@@ -507,8 +546,8 @@
       }
     },
     updateItem: function(id, patch){
-      if(mode==="db"){
-        db.collection("items").doc(id).update(patch).catch(function(e){ console.error(e); });
+      if(mode==="firebase"){
+        db.ref(FIREBASE_PATH+"/items/"+id).update(patch).catch(function(e){ console.error(e); });
       } else {
         var it = STATE.items.find(function(x){ return x.id===id; });
         if(it){ Object.assign(it, patch); }
@@ -517,8 +556,8 @@
       }
     },
     deleteItem: function(id){
-      if(mode==="db"){
-        db.collection("items").doc(id).delete().catch(function(e){ console.error(e); });
+      if(mode==="firebase"){
+        db.ref(FIREBASE_PATH+"/items/"+id).remove().catch(function(e){ console.error(e); });
       } else {
         STATE.items = STATE.items.filter(function(x){ return x.id!==id; });
         saveLocal();
@@ -527,8 +566,8 @@
       }
     },
     setConfig: function(patch){
-      if(mode==="db"){
-        db.doc("config/main").update(patch).catch(function(e){ console.error(e); });
+      if(mode==="firebase"){
+        db.ref(FIREBASE_PATH+"/config").update(patch).catch(function(e){ console.error(e); });
       } else {
         STATE.config = Object.assign({}, STATE.config, patch);
         saveLocal();
@@ -537,8 +576,8 @@
     },
     clearExamples: function(){
       var examples = STATE.items.filter(function(x){ return x.isExample; });
-      if(mode==="db"){
-        examples.forEach(function(it){ db.collection("items").doc(it.id).delete().catch(function(){}); });
+      if(mode==="firebase"){
+        examples.forEach(function(it){ db.ref(FIREBASE_PATH+"/items/"+it.id).remove().catch(function(){}); });
       } else {
         STATE.items = STATE.items.filter(function(x){ return !x.isExample; });
         examples.forEach(function(it){ removeRow(it.id); });
@@ -547,21 +586,6 @@
       }
     }
   };
-
-  function applyDocChanges(changes){
-    changes.forEach(function(ch){
-      var id = ch.doc.id;
-      if(ch.type==="removed"){
-        STATE.items = STATE.items.filter(function(x){ return x.id!==id; });
-        return;
-      }
-      var data = ch.doc.data() || {};
-      var full = Object.assign({id:id}, data);
-      var idx = STATE.items.findIndex(function(x){ return x.id===id; });
-      if(idx===-1){ STATE.items.push(full); } else { STATE.items[idx]=full; }
-    });
-    refreshMonthView();
-  }
 
   /* ---------- row rendering ---------- */
 
@@ -598,14 +622,12 @@
     var valorInput = tr.querySelector(".input-valor");
     var parcelasInput = tr.querySelector(".input-parcelas");
     var delBtn = tr.querySelector(".btn-del");
-    var descTimer = null;
 
     descInput.addEventListener("input", function(){
       var it = STATE.items.find(function(x){ return x.id===item.id; });
       if(it) it.desc = descInput.value;
-      clearTimeout(descTimer);
-      descTimer = setTimeout(function(){ store.updateItem(item.id, { desc: descInput.value }); }, 500);
     });
+    descInput.addEventListener("change", function(){ store.updateItem(item.id, { desc: descInput.value }); });
     catSelect.addEventListener("change", function(){ store.updateItem(item.id, { categoria: catSelect.value }); });
     valorInput.addEventListener("change", function(){
       var v = parseFloat(valorInput.value);
@@ -1059,26 +1081,21 @@
   store.init().then(function(resolvedDb){
     if(resolvedDb){
       db = resolvedDb;
-      mode = "db";
-      var cfgRef = db.doc("config/main");
-      cfgRef.get().then(function(snap){
-        if(!snap.exists){
-          return cfgRef.set({ renda:0 }).then(function(){
-            var chain = Promise.resolve();
-            var seedKey = mesKeyOf(new Date());
-            EXAMPLE_ITEMS.forEach(function(it, i){
-              chain = chain.then(function(){ return db.collection("items").add(Object.assign({}, it, { createdAt: Date.now()+i, mesRef: seedKey, parcelaTotal:1, parcelaIndex:1, parcelaGrupo:null })); });
-            });
-            return chain;
-          });
-        }
+      mode = "firebase";
+      currentViewMonth = firstOfMonth(new Date());
+      var configRef = db.ref(FIREBASE_PATH+"/config");
+      var itemsRef = db.ref(FIREBASE_PATH+"/items");
+      configRef.once("value").then(function(snap){
+        if(!snap.exists()){ return configRef.set({ renda:0 }); }
       }).catch(function(e){ console.error(e); }).then(function(){
-        cfgRef.onSnapshot(function(snap){
-          STATE.config = snap.exists ? (snap.data()||{renda:0}) : {renda:0};
+        configRef.on("value", function(snap){
+          STATE.config = snap.exists() ? (snap.val()||{renda:0}) : {renda:0};
           onConfigChange();
         }, function(e){ console.error(e); });
-        db.collection("items").orderBy("createdAt","asc").onSnapshot(function(qsnap){
-          applyDocChanges(qsnap.docChanges());
+        itemsRef.on("value", function(snap){
+          var val = snap.val() || {};
+          STATE.items = Object.keys(val).map(function(key){ return Object.assign({id:key}, val[key]); });
+          refreshMonthView();
         }, function(e){ console.error(e); });
       });
     } else {
