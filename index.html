@@ -2,6 +2,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-app-compat.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-database-compat.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script src="https://systembria.github.io/just-burger-producao/js/firebase_v2.js?v=20260418"></script>
 <script src="https://systembria.github.io/just-burger-producao/js/auth-guard.js?v=20260418"></script>
 <script>
@@ -270,6 +271,39 @@
     border-radius:8px; padding:8px 10px; font-size:13px; cursor:pointer;
   }
 
+  .fatura-upload-label{ display:inline-flex; align-items:center; gap:6px; cursor:pointer; }
+  .import-divider{
+    display:flex; align-items:center; gap:10px; margin:18px 0 14px; color:var(--text-muted); font-size:12px;
+    text-transform:uppercase; letter-spacing:0.04em; font-weight:700;
+  }
+  .import-divider::before, .import-divider::after{ content:""; flex:1; height:1px; background:var(--border); }
+
+  .cardholder-btn{
+    appearance:none; border:1px solid var(--border); background:var(--surface); color:var(--text-primary);
+    border-radius:10px; padding:10px 14px; font-size:13px; font-weight:600; cursor:pointer; text-align:left;
+    display:block; width:100%; margin-bottom:8px;
+  }
+  .cardholder-btn:hover{ border-color:var(--fixo); }
+  .cardholder-btn .ch-sub{ display:block; font-weight:400; color:var(--text-muted); font-size:12px; margin-top:2px; }
+
+  .fatura-preview-table{ width:100%; border-collapse:collapse; margin-top:12px; font-size:13px; }
+  .fatura-preview-table th{
+    text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-muted);
+    font-weight:700; padding:0 6px 6px; border-bottom:1px solid var(--border);
+  }
+  .fatura-preview-table td{ padding:5px 6px; border-bottom:1px solid var(--border); vertical-align:middle; }
+  .fatura-preview-table select{
+    border:1px solid var(--border); background:var(--surface-2); border-radius:6px; padding:4px 6px; font-size:12px; width:100%;
+  }
+  .fatura-preview-table .col-check{ width:28px; text-align:center; }
+  .fatura-preview-table .col-fp-valor{ text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .fatura-check-row{
+    display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:space-between;
+    margin-top:12px; padding:10px 12px; border-radius:10px; font-size:13px; font-weight:600;
+  }
+  .fatura-check-row.match{ background:var(--fixo-soft); color:var(--fixo); }
+  .fatura-check-row.mismatch{ background:var(--superfluo-soft); color:var(--superfluo); }
+
   .tooltip{
     position:fixed; z-index:50; pointer-events:none; background:var(--text-primary);
     color:var(--bg); font-size:12px; font-weight:600; padding:6px 10px; border-radius:8px;
@@ -318,6 +352,19 @@
 
     <details class="expense-card" id="import-card">
       <summary>Importar vários gastos de uma vez</summary>
+
+      <div class="fatura-upload-block">
+        <p class="empty-note">Suba o PDF de uma fatura ou extrato e o app tenta reconhecer os lançamentos, sugerindo categoria e fixo/supérfluo. Você sempre confere antes de importar.</p>
+        <label class="btn-add fatura-upload-label" for="fatura-file-input">📄 Selecionar PDF da fatura/extrato
+          <input type="file" id="fatura-file-input" accept="application/pdf" hidden>
+        </label>
+        <p class="empty-note" id="fatura-status"></p>
+        <div id="fatura-cardholder-picker"></div>
+        <div id="fatura-preview"></div>
+      </div>
+
+      <div class="import-divider"><span>ou cole manualmente</span></div>
+
       <p class="empty-note">Cole uma linha por gasto, no formato <strong>Descrição; Valor</strong> (ou só descrição e valor no final da linha). Categoria e parcelas você ajusta depois, na tabela.</p>
       <textarea id="import-textarea" class="import-textarea" rows="4" placeholder="Exemplo — cole aqui os seus gastos:&#10;Aluguel; 1200&#10;Internet; 150"></textarea>
       <div class="import-controls">
@@ -408,7 +455,7 @@
 (function(){
   "use strict";
 
-  var CATEGORIAS = ["Moradia","Contas (água/luz/net)","Mercado","Transporte","Saúde","Educação","Lazer","Assinaturas","Vestuário","Outros"];
+  var CATEGORIAS = ["Moradia","Contas (água/luz/net)","Alimentação","Delivery","Mercado","Transporte","Saúde","Educação","Lazer","Assinaturas","Vestuário","Outros"];
 
   var EXAMPLE_ITEMS = [
     {desc:"Aluguel", categoria:"Moradia", tipo:"fixo", valor:2200, isExample:true},
@@ -1040,6 +1087,288 @@
     }
     return null;
   }
+
+  /* ---------- fatura/extrato PDF import ---------- */
+
+  if(typeof pdfjsLib !== "undefined"){
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+  }
+
+  function parseValorBR(s){
+    return parseFloat(String(s||"").replace(/\./g,"").replace(",","."));
+  }
+
+  async function extractPdfRows(arrayBuffer){
+    var pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    var allRows = [];
+    for(var pageNum=1; pageNum<=pdf.numPages; pageNum++){
+      var page = await pdf.getPage(pageNum);
+      var content = await page.getTextContent();
+      var items = content.items.filter(function(it){ return it.str && it.str.length>0; });
+      if(!items.length) continue;
+      var boundaryXs = items.filter(function(it){ return it.str.indexOf("Lançamentos:")===0; }).map(function(it){ return it.transform[4]; });
+      var boundary = null;
+      if(boundaryXs.length>=2){
+        var xs = boundaryXs.slice().sort(function(a,b){ return a-b; });
+        boundary = xs[xs.length-1];
+      }
+      var rows = [];
+      items.forEach(function(it){
+        var y = it.transform[5], x = it.transform[4];
+        var row = null;
+        for(var i=0;i<rows.length;i++){ if(Math.abs(rows[i].y-y)<1.0){ row=rows[i]; break; } }
+        if(!row){ row = { y:y, items:[] }; rows.push(row); }
+        row.items.push({ x:x, text:it.str });
+      });
+      rows.forEach(function(r){ r.items.sort(function(a,b){ return a.x-b.x; }); });
+      rows.sort(function(a,b){ return b.y-a.y; });
+      if(boundary!=null){
+        // Itaú prints a continuous newspaper-style flow: the whole left column top-to-bottom,
+        // THEN the whole right column top-to-bottom — not interleaved row by row.
+        var leftRows = [], rightRows = [];
+        rows.forEach(function(r){
+          var left = r.items.filter(function(it){ return it.x<boundary; });
+          var right = r.items.filter(function(it){ return it.x>=boundary; });
+          if(left.length) leftRows.push({ page:pageNum, col:"L", y:r.y, text: joinRowItems(left) });
+          if(right.length) rightRows.push({ page:pageNum, col:"R", y:r.y, text: joinRowItems(right) });
+        });
+        allRows = allRows.concat(leftRows, rightRows);
+      } else {
+        rows.forEach(function(r){ allRows.push({ page:pageNum, col:"A", y:r.y, text: joinRowItems(r.items) }); });
+      }
+    }
+    return allRows;
+  }
+
+  function joinRowItems(items){
+    return items.map(function(it){ return it.text; }).join("").replace(/\s+/g," ").trim();
+  }
+
+  function extractVencimento(fullText){
+    var m = /Vencimento:\s*(\d{2})\/(\d{2})\/(\d{4})/.exec(fullText);
+    if(!m) return null;
+    return new Date(parseInt(m[3],10), parseInt(m[2],10)-1, 1);
+  }
+
+  function findCardholderSections(rows){
+    var headerRe = /^(.+?)\s*\(final\s*(\d{4})\)$/;
+    var totalRe = /^Lançamentos no cartão \(final (\d{4})\)\s+(-?[\d.]+,\d{2})$/;
+    var sections = [];
+    var openByKey = {};
+    var seenFinals = {};
+    rows.forEach(function(r, idx){
+      if(!/^\d/.test(r.text)){
+        var mh = headerRe.exec(r.text);
+        if(mh && !seenFinals[mh[2]]){
+          seenFinals[mh[2]] = true;
+          var sec = { name: mh[1].trim(), final: mh[2], col: r.col, startIdx: idx, endIdx: null, total: null };
+          sections.push(sec);
+          openByKey[mh[2]+":"+r.col] = sec;
+          return;
+        }
+      }
+      var mt = totalRe.exec(r.text);
+      if(mt){
+        var key = mt[1]+":"+r.col;
+        var sec2 = openByKey[key];
+        if(sec2 && sec2.endIdx==null){ sec2.endIdx = idx; sec2.total = mt[2]; return; }
+        for(var k in openByKey){
+          if(k.indexOf(mt[1]+":")===0 && openByKey[k].endIdx==null){ openByKey[k].endIdx = idx; openByKey[k].total = mt[2]; break; }
+        }
+      }
+    });
+    return sections.filter(function(s){ return s.endIdx!=null; });
+  }
+
+  var TXN_RE = /^(\d{2}\/\d{2})\s+(.+?)\s+(-)?\s*([\d.]+,\d{2})$/;
+  var TXN_PARCELA_RE = /(\d{2})\/(\d{2})$/;
+
+  function extractSectionItems(rows, section){
+    var items = [];
+    var last = null;
+    for(var i=section.startIdx+1; i<section.endIdx; i++){
+      var r = rows[i];
+      if(/^DATA ESTABELECIMENTO/.test(r.text) || /^Lançamentos:/.test(r.text)) continue;
+      var mt = TXN_RE.exec(r.text);
+      if(mt){
+        var estab = mt[2];
+        var pm = TXN_PARCELA_RE.exec(estab);
+        var sign = mt[3] ? -1 : 1;
+        var item = {
+          date: mt[1], estab: estab.replace(TXN_PARCELA_RE,"").replace(/\s+/g," ").trim(),
+          valor: sign*parseValorBR(mt[4]),
+          parcelaIdx: pm ? parseInt(pm[1],10) : 1,
+          parcelaTotal: pm ? parseInt(pm[2],10) : 1,
+          categoriaRaw: null
+        };
+        items.push(item);
+        last = item;
+        continue;
+      }
+      if(last && !last.categoriaRaw && /^[A-ZÀ-Ú][A-ZÀ-Ú\s.]+$/.test(r.text) && r.text.length>2){
+        last.categoriaRaw = r.text.trim();
+      }
+    }
+    return items;
+  }
+
+  var FATURA_CATEGORIA_KEYWORDS = [
+    [/ifood|rappi|uber\s*eats|james\s*delivery/i, "Delivery"],
+    [/netflix|spotify|disney|hbo|amazon\s*prime|apple\.com|icloud|chatgpt|openai|youtube\s*premium|globoplay|paramount|deezer|totalpass|canva/i, "Assinaturas"],
+    [/uber(?!\s*eats)|99app|posto|combustive|estacionamento|ped[aá]gio|blacktag|tag\s*itau|conectcar|sem\s*parar|automotiv|airport/i, "Transporte"],
+    [/restaurante|hamburgu|burger|pizza|lanchonete|churrascaria|padaria/i, "Alimentação"]
+  ];
+  var FATURA_ITAU_CATEGORIA_MAP = {
+    "ALIMENTAÇÃO": "Alimentação", "TURISMO E ENTRETENIM": "Lazer", "VEÍCULOS": "Transporte",
+    "VESTUÁRIO": "Vestuário", "MORADIA": "Moradia", "DIVERSOS": "Outros", "SAÚDE": "Saúde", "EDUCAÇÃO": "Educação"
+  };
+
+  function guessFaturaCategoria(estab, categoriaRaw){
+    for(var i=0;i<FATURA_CATEGORIA_KEYWORDS.length;i++){
+      if(FATURA_CATEGORIA_KEYWORDS[i][0].test(estab)) return FATURA_CATEGORIA_KEYWORDS[i][1];
+    }
+    if(categoriaRaw){
+      var base = categoriaRaw.split(".")[0].trim();
+      for(var key in FATURA_ITAU_CATEGORIA_MAP){
+        if(base.indexOf(key)===0) return FATURA_ITAU_CATEGORIA_MAP[key];
+      }
+    }
+    return "Outros";
+  }
+
+  function createFaturaItem(it, categoria, tipo, anchorKey){
+    var total = it.parcelaTotal || 1;
+    var startIdx = it.parcelaIdx || 1;
+    var groupId = total>1 ? ("fatura-"+Date.now()+"-"+Math.random().toString(36).slice(2,7)) : null;
+    for(var k=startIdx; k<=total; k++){
+      var mesRef = addMonthsToKey(anchorKey, k-startIdx);
+      var payload = {
+        desc: it.estab, categoria: categoria, tipo: tipo, valor: it.valor, isExample:false,
+        createdAt: Date.now()+k, mesRef: mesRef,
+        parcelaTotal: total, parcelaIndex: k, parcelaGrupo: groupId
+      };
+      if(mode==="firebase"){
+        db.ref(FIREBASE_PATH+"/items").push(payload).catch(function(e){ console.error(e); });
+      } else {
+        var id = "local-"+Date.now()+"-f"+k+"-"+Math.random().toString(36).slice(2,7);
+        STATE.items.push(Object.assign({id:id}, payload));
+        saveLocal();
+      }
+    }
+  }
+
+  function renderCardholderPicker(sections){
+    var pickerEl = document.getElementById("fatura-cardholder-picker");
+    pickerEl.innerHTML = sections.map(function(s, i){
+      var sub = "final "+s.final+(s.total ? (" — total "+formatMoney(parseValorBR(s.total))) : "");
+      return '<button type="button" class="cardholder-btn" data-idx="'+i+'">'+escapeXml(s.name)+'<span class="ch-sub">'+escapeXml(sub)+'</span></button>';
+    }).join("");
+    pickerEl.querySelectorAll(".cardholder-btn").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        showFaturaPreview(sections[parseInt(btn.dataset.idx,10)]);
+      });
+    });
+  }
+
+  function showFaturaPreview(section){
+    var items = extractSectionItems(window.__faturaRows, section);
+    var mesBase = firstOfMonth(window.__faturaVencimento || new Date());
+    var previewEl = document.getElementById("fatura-preview");
+    var rowsHtml = items.map(function(it, i){
+      var categoria = guessFaturaCategoria(it.estab, it.categoriaRaw);
+      var parcelaLabel = it.parcelaTotal>1 ? (it.parcelaIdx+"/"+it.parcelaTotal) : "—";
+      return '<tr data-i="'+i+'">'+
+        '<td class="col-check"><input type="checkbox" class="fp-check" checked></td>'+
+        '<td>'+escapeXml(it.estab)+'</td>'+
+        '<td><select class="fp-categoria">'+categoriaOptions(categoria)+'</select></td>'+
+        '<td><select class="fp-tipo"><option value="superfluo" selected>Supérfluo</option><option value="fixo">Fixo</option></select></td>'+
+        '<td class="col-fp-valor">'+formatMoney(it.valor)+'</td>'+
+        '<td>'+parcelaLabel+'</td>'+
+      '</tr>';
+    }).join("");
+    previewEl.innerHTML =
+      '<div class="table-wrap"><table class="fatura-preview-table">'+
+      '<thead><tr><th></th><th>Descrição</th><th>Categoria</th><th>Tipo</th><th>Valor</th><th>Parcela</th></tr></thead>'+
+      '<tbody>'+rowsHtml+'</tbody></table></div>'+
+      '<div class="fatura-check-row" id="fatura-check-row"></div>'+
+      '<div class="import-controls"><button id="fatura-confirm-btn" class="btn-add" type="button">Importar itens selecionados em '+escapeXml(mesLabelOf(mesBase))+'</button></div>';
+
+    function recomputeCheck(){
+      var total = 0, count = 0;
+      previewEl.querySelectorAll("tbody tr").forEach(function(tr){
+        if(tr.querySelector(".fp-check").checked){
+          total += items[parseInt(tr.dataset.i,10)].valor;
+          count++;
+        }
+      });
+      var checkEl = document.getElementById("fatura-check-row");
+      var stated = section.total ? parseValorBR(section.total) : null;
+      if(stated!=null){
+        var match = Math.abs(total-stated) < 0.01;
+        checkEl.className = "fatura-check-row " + (match ? "match" : "mismatch");
+        checkEl.innerHTML = (match ? "✓ " : "⚠ ") + "Soma dos "+count+" item(ns) selecionado(s): "+formatMoney(total)+" — total informado pela fatura: "+formatMoney(stated);
+      } else {
+        checkEl.className = "fatura-check-row";
+        checkEl.innerHTML = "Soma dos "+count+" item(ns) selecionado(s): "+formatMoney(total)+" (fatura não trouxe um total pra conferir)";
+      }
+    }
+    previewEl.querySelectorAll(".fp-check").forEach(function(cb){ cb.addEventListener("change", recomputeCheck); });
+    recomputeCheck();
+
+    document.getElementById("fatura-confirm-btn").addEventListener("click", function(){
+      var added = 0;
+      previewEl.querySelectorAll("tbody tr").forEach(function(tr){
+        if(!tr.querySelector(".fp-check").checked) return;
+        var it = items[parseInt(tr.dataset.i,10)];
+        var categoria = tr.querySelector(".fp-categoria").value;
+        var tipo = tr.querySelector(".fp-tipo").value;
+        createFaturaItem(it, categoria, tipo, mesKeyOf(mesBase));
+        added++;
+      });
+      refreshMonthView();
+      document.getElementById("fatura-status").textContent = added+" item(ns) importado(s) a partir de "+mesLabelOf(mesBase)+".";
+      document.getElementById("fatura-cardholder-picker").innerHTML = "";
+      previewEl.innerHTML = "";
+      document.getElementById("fatura-file-input").value = "";
+    });
+  }
+
+  document.getElementById("fatura-file-input").addEventListener("change", function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var statusEl = document.getElementById("fatura-status");
+    document.getElementById("fatura-cardholder-picker").innerHTML = "";
+    document.getElementById("fatura-preview").innerHTML = "";
+    statusEl.textContent = "Lendo PDF...";
+    if(typeof pdfjsLib === "undefined"){
+      statusEl.textContent = "Não consegui carregar o leitor de PDF agora. Cole os dados manualmente abaixo.";
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(){
+      extractPdfRows(reader.result).then(function(rows){
+        var fullText = rows.map(function(r){ return r.text; }).join(" ");
+        if(!/ita[uú]/i.test(fullText)){
+          statusEl.textContent = "Ainda não reconheço esse formato de fatura/extrato automaticamente. Cole os dados manualmente abaixo.";
+          return;
+        }
+        var sections = findCardholderSections(rows);
+        if(!sections.length){
+          statusEl.textContent = "Não consegui identificar as seções por titular nessa fatura. Cole os dados manualmente abaixo.";
+          return;
+        }
+        window.__faturaRows = rows;
+        window.__faturaVencimento = extractVencimento(fullText);
+        statusEl.textContent = "Encontrei "+sections.length+" titular(es) nesta fatura. Escolha qual importar:";
+        renderCardholderPicker(sections);
+      }).catch(function(err){
+        console.error(err);
+        statusEl.textContent = "Não consegui ler esse PDF automaticamente. Cole os dados manualmente abaixo.";
+      });
+    };
+    reader.onerror = function(){ statusEl.textContent = "Não consegui abrir esse arquivo."; };
+    reader.readAsArrayBuffer(file);
+  });
 
   document.getElementById("import-btn").addEventListener("click", function(){
     var tipo = document.getElementById("import-tipo").value;
