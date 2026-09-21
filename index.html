@@ -1171,34 +1171,54 @@
     return new Date(parseInt(m[3],10), parseInt(m[2],10)-1, 1);
   }
 
-  function findCardholderSections(rows){
+  function findTitularName(fullText){
+    var m = /Titular\s+([A-ZÀ-Ú][A-ZÀ-Ú\s]+?)(?:\s{2,}|Cart[aã]o|$)/.exec(fullText);
+    return m ? m[1].trim() : "Todos os lançamentos identificados";
+  }
+
+  // Sections are delimited purely by consecutive cardholder headers (or, when none exist,
+  // one section spanning the whole "compras e saques" block) — never by requiring an exact
+  // closing "total" line to match, since that wording/format can vary between faturas.
+  // A matching total line is still picked up, opportunistically, only to show a checksum.
+  function findCardholderSections(rows, fullText){
     var headerRe = /^(.+?)\s*\(final\s*(\d{4})\)$/;
     var totalRe = /^Lançamentos no cartão \(final (\d{4})\)\s+(-?[\d.]+,\d{2})$/;
-    var sections = [];
-    var openByKey = {};
+    var endMarkers = /^(Lançamentos internacionais|Compras parceladas|Limites de crédito|Encargos cobrados nesta fatura|Lançamentos: produtos e serviços)/;
+    var boundsStart = -1, boundsEnd = rows.length;
+    for(var i=0;i<rows.length;i++){
+      if(boundsStart===-1 && /^Lançamentos: compras e saques/.test(rows[i].text)){ boundsStart = i; continue; }
+      if(boundsStart!==-1 && endMarkers.test(rows[i].text)){ boundsEnd = i; break; }
+    }
+    if(boundsStart===-1) return [];
+
+    var headers = [];
     var seenFinals = {};
-    rows.forEach(function(r, idx){
-      if(!/^\d/.test(r.text)){
-        var mh = headerRe.exec(r.text);
-        if(mh && !seenFinals[mh[2]]){
-          seenFinals[mh[2]] = true;
-          var sec = { name: mh[1].trim(), final: mh[2], col: r.col, startIdx: idx, endIdx: null, total: null };
-          sections.push(sec);
-          openByKey[mh[2]+":"+r.col] = sec;
-          return;
-        }
+    for(var j=boundsStart+1; j<boundsEnd; j++){
+      var r = rows[j];
+      if(/^\d/.test(r.text)) continue;
+      var mh = headerRe.exec(r.text);
+      if(mh && !seenFinals[mh[2]]){
+        seenFinals[mh[2]] = true;
+        headers.push({ idx:j, name: mh[1].trim(), final: mh[2] });
       }
-      var mt = totalRe.exec(r.text);
-      if(mt){
-        var key = mt[1]+":"+r.col;
-        var sec2 = openByKey[key];
-        if(sec2 && sec2.endIdx==null){ sec2.endIdx = idx; sec2.total = mt[2]; return; }
-        for(var k in openByKey){
-          if(k.indexOf(mt[1]+":")===0 && openByKey[k].endIdx==null){ openByKey[k].endIdx = idx; openByKey[k].total = mt[2]; break; }
-        }
+    }
+
+    var sections;
+    if(headers.length){
+      sections = headers.map(function(h, k){
+        var endIdx = (k+1<headers.length) ? headers[k+1].idx : boundsEnd;
+        return { name:h.name, final:h.final, startIdx:h.idx, endIdx:endIdx, total:null };
+      });
+      for(var t=boundsStart; t<boundsEnd; t++){
+        var mt = totalRe.exec(rows[t].text);
+        if(!mt) continue;
+        for(var s=0;s<sections.length;s++){ if(sections[s].final===mt[1]){ sections[s].total = mt[2]; break; } }
       }
-    });
-    return sections.filter(function(s){ return s.endIdx!=null; });
+    } else {
+      var totalMatch = /Total dos lançamentos atuais\s+(-?[\d.]+,\d{2})/.exec(fullText);
+      sections = [{ name: findTitularName(fullText), final:"", startIdx: boundsStart, endIdx: boundsEnd, total: totalMatch ? totalMatch[1] : null }];
+    }
+    return sections;
   }
 
   var TXN_RE = /^(\d{2}\/\d{2})\s+(.+?)\s+(-)?\s*([\d.]+,\d{2})$/;
@@ -1291,9 +1311,14 @@
   }
 
   function renderCardholderPicker(sections){
+    if(sections.length===1){
+      document.getElementById("fatura-cardholder-picker").innerHTML = "";
+      showFaturaPreview(sections[0]);
+      return;
+    }
     var pickerEl = document.getElementById("fatura-cardholder-picker");
     pickerEl.innerHTML = sections.map(function(s, i){
-      var sub = "final "+s.final+(s.total ? (" — total "+formatMoney(parseValorBR(s.total))) : "");
+      var sub = (s.final ? ("final "+s.final) : "") + (s.total ? (" — total "+formatMoney(parseValorBR(s.total))) : "");
       return '<button type="button" class="cardholder-btn" data-idx="'+i+'">'+escapeXml(s.name)+'<span class="ch-sub">'+escapeXml(sub)+'</span></button>';
     }).join("");
     pickerEl.querySelectorAll(".cardholder-btn").forEach(function(btn){
@@ -1391,14 +1416,16 @@
           statusEl.textContent = "Ainda não reconheço esse formato de fatura/extrato automaticamente. Cole os dados manualmente abaixo.";
           return;
         }
-        var sections = findCardholderSections(rows);
+        var sections = findCardholderSections(rows, fullText);
         if(!sections.length){
-          statusEl.textContent = "Não consegui identificar as seções por titular nessa fatura. Cole os dados manualmente abaixo.";
+          statusEl.textContent = "Não encontrei lançamentos de compras/saques nessa fatura. Cole os dados manualmente abaixo.";
           return;
         }
         window.__faturaRows = rows;
         window.__faturaVencimento = extractVencimento(fullText);
-        statusEl.textContent = "Encontrei "+sections.length+" titular(es) nesta fatura. Escolha qual importar:";
+        statusEl.textContent = sections.length>1
+          ? ("Encontrei "+sections.length+" titular(es) nesta fatura. Escolha qual importar:")
+          : "Encontrei os lançamentos desta fatura. Confira antes de importar:";
         renderCardholderPicker(sections);
       }).catch(function(err){
         console.error(err);
