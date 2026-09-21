@@ -299,7 +299,7 @@
   .fatura-preview-table .col-fp-valor{ text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
   .fatura-check-row{
     display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:space-between;
-    margin-top:12px; padding:10px 12px; border-radius:10px; font-size:13px; font-weight:600;
+    margin:12px 0; padding:10px 12px; border-radius:10px; font-size:13px; font-weight:600;
   }
   .fatura-check-row.match{ background:var(--fixo-soft); color:var(--fixo); }
   .fatura-check-row.mismatch{ background:var(--superfluo-soft); color:var(--superfluo); }
@@ -1349,7 +1349,10 @@
         '<td>'+parcelaLabel+'</td>'+
       '</tr>';
     }).join("");
+    var mixedWarning = section.final ? "" :
+      '<div class="fatura-check-row mismatch">⚠ Não identifiquei o titular de cada lançamento — esta lista pode incluir gastos de mais de uma pessoa. Desmarque o que não for de quem você quer importar antes de confirmar.</div>';
     previewEl.innerHTML =
+      mixedWarning +
       '<div class="table-wrap"><table class="fatura-preview-table">'+
       '<thead><tr><th></th><th>Descrição</th><th>Categoria</th><th>Tipo</th><th>Valor</th><th>Parcela</th></tr></thead>'+
       '<tbody>'+rowsHtml+'</tbody></table></div>'+
@@ -1423,9 +1426,13 @@
         }
         window.__faturaRows = rows;
         window.__faturaVencimento = extractVencimento(fullText);
-        statusEl.textContent = sections.length>1
-          ? ("Encontrei "+sections.length+" titular(es) nesta fatura. Escolha qual importar:")
-          : "Encontrei os lançamentos desta fatura. Confira antes de importar:";
+        if(sections.length>1){
+          statusEl.textContent = "Encontrei "+sections.length+" titular(es) nesta fatura. Escolha qual importar:";
+        } else if(sections[0].final){
+          statusEl.textContent = "Encontrei os lançamentos desta fatura. Confira antes de importar:";
+        } else {
+          statusEl.textContent = "Não consegui separar por titular nesta fatura — a lista abaixo pode ter lançamentos de mais de uma pessoa. Desmarque o que não for do titular que você quer importar.";
+        }
         renderCardholderPicker(sections);
       }).catch(function(err){
         console.error(err);
