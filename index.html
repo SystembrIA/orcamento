@@ -1145,18 +1145,32 @@
 
   async function extractPdfRows(arrayBuffer){
     var pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    var allRows = [];
+    var pages = [];
+    var boundaryXs = [];
     for(var pageNum=1; pageNum<=pdf.numPages; pageNum++){
       var page = await pdf.getPage(pageNum);
       var content = await page.getTextContent();
       var items = content.items.filter(function(it){ return it.str && it.str.length>0; });
-      if(!items.length) continue;
-      var boundaryXs = items.filter(function(it){ return it.str.indexOf("Lançamentos:")===0; }).map(function(it){ return it.transform[4]; });
-      var boundary = null;
-      if(boundaryXs.length>=2){
-        var xs = boundaryXs.slice().sort(function(a,b){ return a-b; });
-        boundary = xs[xs.length-1];
-      }
+      pages.push({ pageNum: pageNum, items: items });
+      items.forEach(function(it){
+        if(it.str.indexOf("Lançamentos:")===0) boundaryXs.push(it.transform[4]);
+      });
+    }
+    // The 2-column x-positions are fixed by the page template and don't change from page to
+    // page — but the "Lançamentos:" header text that reveals them is only printed once (or on
+    // some pages, not at all, e.g. a continuation page). Compute the boundary ONCE from
+    // whichever page(s) do show it, and reuse it for every page, so a continuation page
+    // without its own header still gets its left/right columns split apart instead of having
+    // both columns' text (potentially two different cardholders) glued into one row.
+    var boundary = null;
+    if(boundaryXs.length>=2){
+      var xs = boundaryXs.slice().sort(function(a,b){ return a-b; });
+      boundary = xs[xs.length-1];
+    }
+    var allRows = [];
+    pages.forEach(function(p){
+      var items = p.items;
+      if(!items.length) return;
       var tol = computeRowTolerance(items);
       var rows = [];
       items.forEach(function(it){
@@ -1175,14 +1189,14 @@
         rows.forEach(function(r){
           var left = r.items.filter(function(it){ return it.x<boundary; });
           var right = r.items.filter(function(it){ return it.x>=boundary; });
-          if(left.length) leftRows.push({ page:pageNum, col:"L", y:r.y, text: joinRowItems(left) });
-          if(right.length) rightRows.push({ page:pageNum, col:"R", y:r.y, text: joinRowItems(right) });
+          if(left.length) leftRows.push({ page:p.pageNum, col:"L", y:r.y, text: joinRowItems(left) });
+          if(right.length) rightRows.push({ page:p.pageNum, col:"R", y:r.y, text: joinRowItems(right) });
         });
         allRows = allRows.concat(leftRows, rightRows);
       } else {
-        rows.forEach(function(r){ allRows.push({ page:pageNum, col:"A", y:r.y, text: joinRowItems(r.items) }); });
+        rows.forEach(function(r){ allRows.push({ page:p.pageNum, col:"A", y:r.y, text: joinRowItems(r.items) }); });
       }
-    }
+    });
     return allRows;
   }
 
