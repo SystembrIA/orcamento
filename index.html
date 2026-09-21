@@ -468,7 +468,7 @@
     {desc:"Compras não essenciais", categoria:"Vestuário", tipo:"superfluo", valor:180, isExample:true}
   ];
 
-  var STATE = { items: [], config: { renda: 0 } };
+  var STATE = { items: [], config: { renda: 0 }, merchantRules: {} };
   var rowsById = {};
   var db = null;
   var mode = "local";
@@ -515,6 +515,7 @@
         var parsed = JSON.parse(raw);
         STATE.items = Array.isArray(parsed.items) ? parsed.items : [];
         STATE.config = parsed.config || { renda:0 };
+        STATE.merchantRules = parsed.merchantRules || {};
         var todayKey = mesKeyOf(new Date());
         var migrated = false;
         STATE.items.forEach(function(it){
@@ -536,7 +537,27 @@
     }
   }
   function saveLocal(){
-    try{ localStorage.setItem(LOCAL_KEY, JSON.stringify({items:STATE.items, config:STATE.config})); } catch(e){}
+    try{ localStorage.setItem(LOCAL_KEY, JSON.stringify({items:STATE.items, config:STATE.config, merchantRules:STATE.merchantRules})); } catch(e){}
+  }
+
+  function normalizeMerchantKey(estab){
+    return String(estab||"").toUpperCase().replace(/\s+/g," ").trim();
+  }
+
+  function learnMerchantRule(estab, categoria, tipo){
+    var key = normalizeMerchantKey(estab);
+    if(!key) return;
+    STATE.merchantRules[key] = { categoria: categoria, tipo: tipo };
+    if(mode==="firebase"){
+      db.ref(FIREBASE_PATH+"/merchantRules/"+encodeMerchantKeyForFirebase(key)).set(STATE.merchantRules[key]).catch(function(e){ console.error(e); });
+    } else {
+      saveLocal();
+    }
+  }
+
+  function encodeMerchantKeyForFirebase(key){
+    // Firebase Realtime DB keys can't contain . # $ [ ] /
+    return encodeURIComponent(key).replace(/\./g,"%2E");
   }
 
   var FIREBASE_PATH = "orcamento";
@@ -1223,7 +1244,14 @@
     "VESTUÁRIO": "Vestuário", "MORADIA": "Moradia", "DIVERSOS": "Outros", "SAÚDE": "Saúde", "EDUCAÇÃO": "Educação"
   };
 
+  function lookupMerchantRule(estab){
+    var rule = STATE.merchantRules[normalizeMerchantKey(estab)];
+    return rule || null;
+  }
+
   function guessFaturaCategoria(estab, categoriaRaw){
+    var learned = lookupMerchantRule(estab);
+    if(learned && learned.categoria) return learned.categoria;
     for(var i=0;i<FATURA_CATEGORIA_KEYWORDS.length;i++){
       if(FATURA_CATEGORIA_KEYWORDS[i][0].test(estab)) return FATURA_CATEGORIA_KEYWORDS[i][1];
     }
@@ -1234,6 +1262,11 @@
       }
     }
     return "Outros";
+  }
+
+  function guessFaturaTipo(estab){
+    var learned = lookupMerchantRule(estab);
+    return (learned && learned.tipo) ? learned.tipo : "superfluo";
   }
 
   function createFaturaItem(it, categoria, tipo, anchorKey){
@@ -1276,12 +1309,17 @@
     var previewEl = document.getElementById("fatura-preview");
     var rowsHtml = items.map(function(it, i){
       var categoria = guessFaturaCategoria(it.estab, it.categoriaRaw);
+      var tipo = guessFaturaTipo(it.estab);
+      var learned = lookupMerchantRule(it.estab);
       var parcelaLabel = it.parcelaTotal>1 ? (it.parcelaIdx+"/"+it.parcelaTotal) : "—";
       return '<tr data-i="'+i+'">'+
         '<td class="col-check"><input type="checkbox" class="fp-check" checked></td>'+
-        '<td>'+escapeXml(it.estab)+'</td>'+
+        '<td>'+escapeXml(it.estab)+(learned?' <span class="ch-sub" title="Sugestão baseada em uma correção sua anterior">(aprendido)</span>':'')+'</td>'+
         '<td><select class="fp-categoria">'+categoriaOptions(categoria)+'</select></td>'+
-        '<td><select class="fp-tipo"><option value="superfluo" selected>Supérfluo</option><option value="fixo">Fixo</option></select></td>'+
+        '<td><select class="fp-tipo">'+
+          '<option value="superfluo"'+(tipo==="superfluo"?" selected":"")+'>Supérfluo</option>'+
+          '<option value="fixo"'+(tipo==="fixo"?" selected":"")+'>Fixo</option>'+
+        '</select></td>'+
         '<td class="col-fp-valor">'+formatMoney(it.valor)+'</td>'+
         '<td>'+parcelaLabel+'</td>'+
       '</tr>';
@@ -1323,6 +1361,7 @@
         var categoria = tr.querySelector(".fp-categoria").value;
         var tipo = tr.querySelector(".fp-tipo").value;
         createFaturaItem(it, categoria, tipo, mesKeyOf(mesBase));
+        learnMerchantRule(it.estab, categoria, tipo);
         added++;
       });
       refreshMonthView();
@@ -1414,6 +1453,7 @@
       currentViewMonth = firstOfMonth(new Date());
       var configRef = db.ref(FIREBASE_PATH+"/config");
       var itemsRef = db.ref(FIREBASE_PATH+"/items");
+      var merchantRulesRef = db.ref(FIREBASE_PATH+"/merchantRules");
       configRef.once("value").then(function(snap){
         if(!snap.exists()){ return configRef.set({ renda:0 }); }
       }).catch(function(e){ console.error(e); }).then(function(){
@@ -1425,6 +1465,12 @@
           var val = snap.val() || {};
           STATE.items = Object.keys(val).map(function(key){ return Object.assign({id:key}, val[key]); });
           refreshMonthView();
+        }, function(e){ console.error(e); });
+        merchantRulesRef.on("value", function(snap){
+          var val = snap.val() || {};
+          var rules = {};
+          Object.keys(val).forEach(function(k){ rules[decodeURIComponent(k)] = val[k]; });
+          STATE.merchantRules = rules;
         }, function(e){ console.error(e); });
       });
     } else {
