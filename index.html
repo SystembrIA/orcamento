@@ -341,6 +341,7 @@
       <div class="month-nav-label" id="mes-nav-label">—</div>
       <button type="button" id="mes-next" class="btn-ghost" aria-label="Próximo mês">›</button>
       <button type="button" id="mes-hoje-btn" class="btn-ghost">Hoje</button>
+      <button type="button" id="mes-limpar-btn" class="btn-ghost" title="Excluir todos os lançamentos (fixos e supérfluos) do mês exibido">🗑 Limpar mês</button>
     </div>
 
     <div class="summary-row" id="summary-row-1"></div>
@@ -1075,6 +1076,13 @@
   document.getElementById("mes-prev").addEventListener("click", function(){ goToMonth(-1); });
   document.getElementById("mes-next").addEventListener("click", function(){ goToMonth(1); });
   document.getElementById("mes-hoje-btn").addEventListener("click", goToToday);
+  document.getElementById("mes-limpar-btn").addEventListener("click", function(){
+    var itemsDoMes = itemsForViewedMonth();
+    if(!itemsDoMes.length){ window.alert("Não há lançamentos em "+mesLabelOf(currentViewMonth)+" para excluir."); return; }
+    var ok = window.confirm("Excluir os "+itemsDoMes.length+" lançamento(s) de "+mesLabelOf(currentViewMonth)+"? Essa ação não pode ser desfeita.");
+    if(!ok) return;
+    itemsDoMes.forEach(function(it){ store.deleteItem(it.id); });
+  });
 
   document.querySelectorAll(".btn-add[data-tipo]").forEach(function(btn){
     btn.addEventListener("click", function(){
@@ -1119,6 +1127,22 @@
     return parseFloat(String(s||"").replace(/\./g,"").replace(",","."));
   }
 
+  // Same-row text items share (almost) the exact same y in pdf.js; different rows never do.
+  // Instead of a fixed tolerance (wrong for denser/looser faturas), use a fraction of the
+  // smallest real line-to-line gap actually observed on this page, so tightly-packed faturas
+  // don't get two distinct transactions merged into one garbled row.
+  function computeRowTolerance(items){
+    var ys = items.map(function(it){ return it.transform[5]; }).sort(function(a,b){ return b-a; });
+    var gaps = [];
+    for(var i=1;i<ys.length;i++){
+      var g = ys[i-1]-ys[i];
+      if(g>0.3) gaps.push(g);
+    }
+    if(!gaps.length) return 0.5;
+    gaps.sort(function(a,b){ return a-b; });
+    return Math.min(0.6, Math.max(0.15, gaps[0]*0.25));
+  }
+
   async function extractPdfRows(arrayBuffer){
     var pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     var allRows = [];
@@ -1133,11 +1157,12 @@
         var xs = boundaryXs.slice().sort(function(a,b){ return a-b; });
         boundary = xs[xs.length-1];
       }
+      var tol = computeRowTolerance(items);
       var rows = [];
       items.forEach(function(it){
         var y = it.transform[5], x = it.transform[4];
         var row = null;
-        for(var i=0;i<rows.length;i++){ if(Math.abs(rows[i].y-y)<1.0){ row=rows[i]; break; } }
+        for(var i=0;i<rows.length;i++){ if(Math.abs(rows[i].y-y)<tol){ row=rows[i]; break; } }
         if(!row){ row = { y:y, items:[] }; rows.push(row); }
         row.items.push({ x:x, text:it.str });
       });
@@ -1224,6 +1249,13 @@
   var TXN_RE = /^(\d{2}\/\d{2})\s+(.+?)\s+(-)?\s*([\d.]+,\d{2})$/;
   var TXN_PARCELA_RE = /(\d{2})\/(\d{2})$/;
 
+  // A merchant name that still contains a currency-like number or a date/parcela pattern
+  // after cleanup almost certainly means two rows got merged during extraction (e.g. a
+  // fatura with tighter line spacing than expected) — flag it so it isn't imported blindly.
+  function looksGarbled(estab){
+    return /\d,\d{2}(?!\d)/.test(estab) || /\d{2}\/\d{2}/.test(estab);
+  }
+
   function extractSectionItems(rows, section){
     var items = [];
     var last = null;
@@ -1235,12 +1267,14 @@
         var estab = mt[2];
         var pm = TXN_PARCELA_RE.exec(estab);
         var sign = mt[3] ? -1 : 1;
+        var cleanEstab = estab.replace(TXN_PARCELA_RE,"").replace(/\s+/g," ").trim();
         var item = {
-          date: mt[1], estab: estab.replace(TXN_PARCELA_RE,"").replace(/\s+/g," ").trim(),
+          date: mt[1], estab: cleanEstab,
           valor: sign*parseValorBR(mt[4]),
           parcelaIdx: pm ? parseInt(pm[1],10) : 1,
           parcelaTotal: pm ? parseInt(pm[2],10) : 1,
-          categoriaRaw: null
+          categoriaRaw: null,
+          suspect: looksGarbled(cleanEstab)
         };
         items.push(item);
         last = item;
@@ -1332,14 +1366,16 @@
     var items = extractSectionItems(window.__faturaRows, section);
     var mesBase = firstOfMonth(window.__faturaVencimento || new Date());
     var previewEl = document.getElementById("fatura-preview");
+    var suspectCount = items.filter(function(it){ return it.suspect; }).length;
     var rowsHtml = items.map(function(it, i){
       var categoria = guessFaturaCategoria(it.estab, it.categoriaRaw);
       var tipo = guessFaturaTipo(it.estab);
       var learned = lookupMerchantRule(it.estab);
       var parcelaLabel = it.parcelaTotal>1 ? (it.parcelaIdx+"/"+it.parcelaTotal) : "—";
+      var suspectTag = it.suspect ? ' <span class="ch-sub" style="color:var(--superfluo)" title="A descrição ainda tem um número parecido com valor ou data no meio — pode ter se misturado com outro lançamento. Confira antes de marcar.">⚠ conferir</span>' : "";
       return '<tr data-i="'+i+'">'+
-        '<td class="col-check"><input type="checkbox" class="fp-check" checked></td>'+
-        '<td>'+escapeXml(it.estab)+(learned?' <span class="ch-sub" title="Sugestão baseada em uma correção sua anterior">(aprendido)</span>':'')+'</td>'+
+        '<td class="col-check"><input type="checkbox" class="fp-check"'+(it.suspect?"":" checked")+'></td>'+
+        '<td>'+escapeXml(it.estab)+suspectTag+(learned?' <span class="ch-sub" title="Sugestão baseada em uma correção sua anterior">(aprendido)</span>':'')+'</td>'+
         '<td><select class="fp-categoria">'+categoriaOptions(categoria)+'</select></td>'+
         '<td><select class="fp-tipo">'+
           '<option value="superfluo"'+(tipo==="superfluo"?" selected":"")+'>Supérfluo</option>'+
@@ -1351,8 +1387,10 @@
     }).join("");
     var mixedWarning = section.final ? "" :
       '<div class="fatura-check-row mismatch">⚠ Não identifiquei o titular de cada lançamento — esta lista pode incluir gastos de mais de uma pessoa. Desmarque o que não for de quem você quer importar antes de confirmar.</div>';
+    var suspectWarning = suspectCount>0 ?
+      '<div class="fatura-check-row mismatch">⚠ '+suspectCount+' descrição(ões) parecem ter se misturado com outro lançamento (ficaram desmarcadas) — dá pra ver o valor certo na fatura e corrigir a descrição, ou deixar de fora mesmo.</div>' : "";
     previewEl.innerHTML =
-      mixedWarning +
+      mixedWarning + suspectWarning +
       '<div class="table-wrap"><table class="fatura-preview-table">'+
       '<thead><tr><th></th><th>Descrição</th><th>Categoria</th><th>Tipo</th><th>Valor</th><th>Parcela</th></tr></thead>'+
       '<tbody>'+rowsHtml+'</tbody></table></div>'+
