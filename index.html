@@ -1201,13 +1201,15 @@
     return m ? m[1].trim() : "Todos os lançamentos identificados";
   }
 
-  // Sections are delimited purely by consecutive cardholder headers (or, when none exist,
-  // one section spanning the whole "compras e saques" block) — never by requiring an exact
-  // closing "total" line to match, since that wording/format can vary between faturas.
-  // A matching total line is still picked up, opportunistically, only to show a checksum.
+  // Sections are delimited primarily by the closing "Lançamentos no cartão (final NNNN) valor"
+  // line Itaú prints after each cardholder's transactions — that wording is far more stable across
+  // faturas than the free-text name header, which can wrap, merge with a neighboring column, or use
+  // slightly different spacing and fail to match. Name headers are only used to LABEL a section
+  // (matched by the same final-4-digits), never to decide where a section starts or ends — that way
+  // a header we fail to recognize can never cause one cardholder's rows to swallow another's.
   function findCardholderSections(rows, fullText){
-    var headerRe = /^(.+?)\s*\(final\s*(\d{4})\)$/;
-    var totalRe = /^Lançamentos no cartão \(final (\d{4})\)\s+(-?[\d.]+,\d{2})$/;
+    var headerRe = /^(.+?)\s*\(final\s*(\d{4})\)/;
+    var totalRe = /Lançamentos no cartão \(final (\d{4})\)\s+(-?[\d.]+,\d{2})/;
     var endMarkers = /^(Lançamentos internacionais|Compras parceladas|Limites de crédito|Encargos cobrados nesta fatura|Lançamentos: produtos e serviços)/;
     var boundsStart = -1, boundsEnd = rows.length;
     for(var i=0;i<rows.length;i++){
@@ -1216,11 +1218,22 @@
     }
     if(boundsStart===-1) return [];
 
+    var totals = [];
+    var seenTotalFinals = {};
+    for(var t=boundsStart+1; t<boundsEnd; t++){
+      var mt = totalRe.exec(rows[t].text);
+      if(mt && !seenTotalFinals[mt[1]]){
+        seenTotalFinals[mt[1]] = true;
+        totals.push({ idx:t, final:mt[1], total:mt[2] });
+      }
+    }
+
     var headers = [];
     var seenFinals = {};
     for(var j=boundsStart+1; j<boundsEnd; j++){
       var r = rows[j];
       if(/^\d/.test(r.text)) continue;
+      if(totalRe.test(r.text)) continue; // the closing total line also fits "text (final NNNN)" — not a name header
       var mh = headerRe.exec(r.text);
       if(mh && !seenFinals[mh[2]]){
         seenFinals[mh[2]] = true;
@@ -1229,26 +1242,18 @@
     }
 
     var sections;
-    if(headers.length){
+    if(totals.length){
+      sections = totals.map(function(tt, k){
+        var startIdx = k===0 ? boundsStart : totals[k-1].idx;
+        var h = null;
+        for(var hIdx=0; hIdx<headers.length; hIdx++){ if(headers[hIdx].final===tt.final){ h = headers[hIdx]; break; } }
+        return { name: h ? h.name : ("Cartão final "+tt.final), final: tt.final, startIdx: startIdx, endIdx: tt.idx, total: tt.total };
+      });
+    } else if(headers.length){
       sections = headers.map(function(h, k){
         var endIdx = (k+1<headers.length) ? headers[k+1].idx : boundsEnd;
         return { name:h.name, final:h.final, startIdx:h.idx, endIdx:endIdx, total:null };
       });
-      for(var t=boundsStart; t<boundsEnd; t++){
-        var mt = totalRe.exec(rows[t].text);
-        if(!mt) continue;
-        for(var s=0;s<sections.length;s++){
-          if(sections[s].final===mt[1]){
-            sections[s].total = mt[2];
-            // The closing "Lançamentos no cartão (final NNNN) total" line, when present, is an
-            // authoritative boundary — stop the section there instead of letting it run all the
-            // way to the next detected header (which may be missing or come from a different
-            // sub-table), so one cardholder's rows never swallow another's.
-            if(t < sections[s].endIdx) sections[s].endIdx = t;
-            break;
-          }
-        }
-      }
     } else {
       var totalMatch = /Total dos lançamentos atuais\s+(-?[\d.]+,\d{2})/.exec(fullText);
       sections = [{ name: findTitularName(fullText), final:"", startIdx: boundsStart, endIdx: boundsEnd, total: totalMatch ? totalMatch[1] : null }];
