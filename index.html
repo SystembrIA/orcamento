@@ -1237,7 +1237,17 @@
       for(var t=boundsStart; t<boundsEnd; t++){
         var mt = totalRe.exec(rows[t].text);
         if(!mt) continue;
-        for(var s=0;s<sections.length;s++){ if(sections[s].final===mt[1]){ sections[s].total = mt[2]; break; } }
+        for(var s=0;s<sections.length;s++){
+          if(sections[s].final===mt[1]){
+            sections[s].total = mt[2];
+            // The closing "Lançamentos no cartão (final NNNN) total" line, when present, is an
+            // authoritative boundary — stop the section there instead of letting it run all the
+            // way to the next detected header (which may be missing or come from a different
+            // sub-table), so one cardholder's rows never swallow another's.
+            if(t < sections[s].endIdx) sections[s].endIdx = t;
+            break;
+          }
+        }
       }
     } else {
       var totalMatch = /Total dos lançamentos atuais\s+(-?[\d.]+,\d{2})/.exec(fullText);
