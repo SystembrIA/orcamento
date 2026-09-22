@@ -1299,7 +1299,7 @@
       if(clusters[0].minX>mid) right = clusters[0]; else left = clusters[0];
     }
     if(!right){
-      var rh = headers.filter(function(h){ return h.x>mid && /^Lançamentos/.test(h.text.trim()); });
+      var rh = p.items.filter(function(h){ return h.x>mid && /^(lancamentos|compras parceladas|limites de cr|encargos cobrados)/.test(normalizeText(h.text).trim()); });
       if(rh.length) right = { minX: Math.min.apply(null, rh.map(function(h){ return h.x; })) };
     }
     return { split: right ? colStart(right) : null, leftStart: (left && right) ? colStart(left) : null };
@@ -1373,66 +1373,6 @@
     return m ? m[1].trim() : "Todos os lançamentos identificados";
   }
 
-  // Sections are delimited primarily by the closing "Lançamentos no cartão (final NNNN) valor"
-  // line Itaú prints after each cardholder's transactions — that wording is far more stable across
-  // faturas than the free-text name header, which can wrap, merge with a neighboring column, or use
-  // slightly different spacing and fail to match. Name headers are only used to LABEL a section
-  // (matched by the same final-4-digits), never to decide where a section starts or ends — that way
-  // a header we fail to recognize can never cause one cardholder's rows to swallow another's.
-  function findCardholderSections(rows, fullText){
-    var headerRe = /^(.+?)\s*\(final\s*(\d{4})\)/;
-    var totalRe = /Lançamentos no cartão \(final (\d{4})\)\s+(-?[\d.]+,\d{2})/;
-    var endMarkers = /^(Lançamentos internacionais|Compras parceladas|Limites de crédito|Encargos cobrados nesta fatura|Lançamentos: produtos e serviços)/;
-    var boundsStart = -1, boundsEnd = rows.length;
-    for(var i=0;i<rows.length;i++){
-      if(boundsStart===-1 && /^Lançamentos: compras e saques/.test(rows[i].text)){ boundsStart = i; continue; }
-      if(boundsStart!==-1 && endMarkers.test(rows[i].text)){ boundsEnd = i; break; }
-    }
-    if(boundsStart===-1) return [];
-
-    var totals = [];
-    var seenTotalFinals = {};
-    for(var t=boundsStart+1; t<boundsEnd; t++){
-      var mt = totalRe.exec(rows[t].text);
-      if(mt && !seenTotalFinals[mt[1]]){
-        seenTotalFinals[mt[1]] = true;
-        totals.push({ idx:t, final:mt[1], total:mt[2] });
-      }
-    }
-
-    var headers = [];
-    var seenFinals = {};
-    for(var j=boundsStart+1; j<boundsEnd; j++){
-      var r = rows[j];
-      if(/^\d/.test(r.text)) continue;
-      if(totalRe.test(r.text)) continue; // the closing total line also fits "text (final NNNN)" — not a name header
-      var mh = headerRe.exec(r.text);
-      if(mh && !seenFinals[mh[2]]){
-        seenFinals[mh[2]] = true;
-        headers.push({ idx:j, name: mh[1].trim(), final: mh[2] });
-      }
-    }
-
-    var sections;
-    if(totals.length){
-      sections = totals.map(function(tt, k){
-        var startIdx = k===0 ? boundsStart : totals[k-1].idx;
-        var h = null;
-        for(var hIdx=0; hIdx<headers.length; hIdx++){ if(headers[hIdx].final===tt.final){ h = headers[hIdx]; break; } }
-        return { name: h ? h.name : ("Cartão final "+tt.final), final: tt.final, startIdx: startIdx, endIdx: tt.idx, total: tt.total };
-      });
-    } else if(headers.length){
-      sections = headers.map(function(h, k){
-        var endIdx = (k+1<headers.length) ? headers[k+1].idx : boundsEnd;
-        return { name:h.name, final:h.final, startIdx:h.idx, endIdx:endIdx, total:null };
-      });
-    } else {
-      var totalMatch = /Total dos lançamentos atuais\s+(-?[\d.]+,\d{2})/.exec(fullText);
-      sections = [{ name: findTitularName(fullText), final:"", startIdx: boundsStart, endIdx: boundsEnd, total: totalMatch ? totalMatch[1] : null }];
-    }
-    return sections;
-  }
-
   var TXN_RE = /^\W{0,3}?(\d{2}\/\d{2})\s+(.+?)\s+(-)?\s*([\d.]+,\d{2})\W{0,3}$/;
   var TXN_PARCELA_RE = /(\d{2})\/(\d{2})$/;
 
@@ -1443,36 +1383,127 @@
     return /\d,\d{2}(?!\d)/.test(estab) || /\d{2}\/\d{2}/.test(estab);
   }
 
-  function extractSectionItems(rows, section){
-    var items = [];
-    var last = null;
-    for(var i=section.startIdx+1; i<section.endIdx; i++){
-      var r = rows[i];
-      if(r.col==="S") continue;
-      if(/^DATA ESTABELECIMENTO/.test(r.text) || /^Lançamentos:/.test(r.text)) continue;
-      var mt = TXN_RE.exec(r.text);
-      if(mt){
-        var estab = mt[2];
-        var pm = TXN_PARCELA_RE.exec(estab);
-        var sign = mt[3] ? -1 : 1;
-        var cleanEstab = estab.replace(TXN_PARCELA_RE,"").replace(/\s+/g," ").trim();
-        var item = {
-          date: mt[1], estab: cleanEstab,
-          valor: sign*parseValorBR(mt[4]),
-          parcelaIdx: pm ? parseInt(pm[1],10) : 1,
-          parcelaTotal: pm ? parseInt(pm[2],10) : 1,
-          categoriaRaw: null,
-          suspect: looksGarbled(cleanEstab)
-        };
-        items.push(item);
-        last = item;
-        continue;
-      }
-      if(last && !last.categoriaRaw && /^[A-ZÀ-Ú][A-ZÀ-Ú\s.]+$/.test(r.text) && r.text.length>2){
-        last.categoriaRaw = r.text.trim();
-      }
+  function parseItauTxn(text){
+    var mt = TXN_RE.exec(text);
+    if(!mt) return null;
+    var estab = mt[2];
+    var pm = TXN_PARCELA_RE.exec(estab);
+    var cleanEstab = estab.replace(TXN_PARCELA_RE,"").replace(/\s+/g," ").trim();
+    return {
+      date: mt[1], desc: cleanEstab,
+      amount: (mt[3] ? -1 : 1)*parseValorBR(mt[4]),
+      parcelaIdx: pm ? parseInt(pm[1],10) : 1,
+      parcelaTotal: pm ? parseInt(pm[2],10) : 1,
+      hint: null,
+      suspect: looksGarbled(cleanEstab)
+    };
+  }
+
+  // A fatura Itaú é lida pelos TÍTULOS de cada bloco, na ordem de leitura (coluna esquerda, depois
+  // direita, página seguinte), e não pela posição na página — assim não importa se um total está
+  // mais em cima ou mais embaixo, nem se a lista de um titular começa numa coluna e termina em outra.
+  // O titular atual só muda quando aparece o cabeçalho de outro ou a linha de total dele.
+  var ITAU_BLOCOS = {
+    nacional: /^lancamentos:? compras e saques/,
+    internacional: /^lancamentos internacionais/,
+    servicos: /^lancamentos:? produtos e servicos/,
+    encargos: /^encargos cobrados nesta fatura/,
+    // blocos informativos: "Compras parceladas - próximas faturas" lista parcelas FUTURAS, que o
+    // app já gera sozinho a partir da parcela atual — ler isso duplicaria os gastos
+    ignorar: /^(compras parceladas|limites de credito|limite (total|disponivel|maximo)|simulacao|novo teto|credito rotativo|fique atento|pagamento minimo|parcelamento|juros maximos)/,
+    totalNacional: /^lancamentos no cartao \(final (\d{4})\)\s+(-?[\d.]+,\d{2})/,
+    totalIntl: /^total lancamentos inter\.? em r\$\s*(-?[\d.]+,\d{2})/,
+    iof: /^repasse de iof em r\$\s*(-?[\d.]+,\d{2})/,
+    totalServicos: /^lancamentos:? produtos e servicos\s+(-?[\d.]+,\d{2})/,
+    totalEncargos: /^total de encargos em r\$\s*(-?[\d.]+,\d{2})/,
+    titular: /^(.+?)\s*\(final\s*(\d{4})\)\s*$/
+  };
+
+  function parseItauFatura(rows, fullText, fileName){
+    var venc = findVencimentoDate(fullText);
+    var groups = {}, order = [];
+    function group(key, name){
+      if(!groups[key]){
+        groups[key] = { key:key, name:name, final: /^\d{4}$/.test(key) ? key : "", txs:[], total:0, hasTotal:false };
+        order.push(key);
+      } else if(name && /^Cartão final/.test(groups[key].name)) groups[key].name = name;
+      return groups[key];
     }
-    return items;
+    function addTotal(g, v){ g.total = Math.round((g.total+parseValorBR(v))*100)/100; g.hasTotal = true; }
+    function encargosGroup(){ return group("_encargos", "Encargos e serviços da fatura"); }
+    var mode = null, holder = null, last = null, m;
+
+    rows.forEach(function(r){
+      if(r.col==="S") return;
+      var t = r.text, n = normalizeText(t).trim();
+      if(ITAU_BLOCOS.totalServicos.test(n)){ addTotal(encargosGroup(), ITAU_BLOCOS.totalServicos.exec(n)[1]); mode = null; return; }
+      if(ITAU_BLOCOS.nacional.test(n)){ mode = "nacional"; return; }
+      if(ITAU_BLOCOS.internacional.test(n)){ mode = "internacional"; holder = null; return; }
+      if(ITAU_BLOCOS.servicos.test(n)){ mode = "servicos"; return; }
+      if(ITAU_BLOCOS.encargos.test(n)){ mode = "encargos"; return; }
+      if((m = ITAU_BLOCOS.totalNacional.exec(n))){
+        addTotal(group(m[1], "Cartão final "+m[1]), m[2]);
+        holder = null; last = null; return;
+      }
+      if(mode==="internacional"){
+        if((m = ITAU_BLOCOS.iof.exec(n))){
+          var iof = parseValorBR(m[1]);
+          if(holder && iof) holder.txs.push({ date:null, desc:"IOF compras internacionais", amount:iof, parcelaIdx:1, parcelaTotal:1, hint:null, suspect:false });
+          return;
+        }
+        if((m = ITAU_BLOCOS.totalIntl.exec(n))){ if(holder) addTotal(holder, m[1]); holder = null; return; }
+      }
+      if(mode==="encargos"){
+        if((m = ITAU_BLOCOS.totalEncargos.exec(n))){ addTotal(encargosGroup(), m[1]); mode = null; return; }
+        if(/^(total|valor)/.test(n)) return;
+        var md = /^([^\d]*?[A-Za-zÀ-ú][^\d]*?)\s*[\d(]/.exec(t), mv = /(-?[\d.]+,\d{2})\s*$/.exec(t);
+        if(md && mv && parseValorBR(mv[1])){
+          encargosGroup().txs.push({ date:null, desc: md[1].replace(/[\s(:–-]+$/,"").trim(), amount: parseValorBR(mv[1]), parcelaIdx:1, parcelaTotal:1, hint:null, suspect:false });
+        }
+        return;
+      }
+      if(ITAU_BLOCOS.ignorar.test(n)){ mode = "ignorar"; return; }
+      if(mode!=="nacional" && mode!=="internacional" && mode!=="servicos") return;
+
+      var mh = ITAU_BLOCOS.titular.exec(t);
+      if(mh && mode!=="servicos" && !/^\W{0,3}\d{2}\//.test(t)){
+        holder = group(mh[2], mh[1].trim()); last = null; return;
+      }
+      if(/^data\b/.test(n)) return;
+      var it = parseItauTxn(t);
+      if(it){
+        var g = mode==="servicos" ? encargosGroup() : (holder || group("_titular", findTitularName(fullText)));
+        g.txs.push(it);
+        last = mode==="nacional" ? it : null;
+        return;
+      }
+      // linha de baixo do lançamento nacional: "VEÍCULOS .SAO PAULO" / "TURISMO E ENTRETENIM.São Paulo"
+      var mc = /^([A-ZÀ-Ú][A-ZÀ-Ú\s]+?)\s*(\.|$)/.exec(t);
+      if(last && !last.hint && mc && mc[1].length>2) last.hint = mc[1].trim();
+    });
+
+    function toDoc(g){
+      var txs = g.txs.map(function(it){
+        // parcela antiga: a data impressa é a da compra original, (n-1) meses antes desta fatura
+        var ref = venc ? new Date(venc.getFullYear(), venc.getMonth()-((it.parcelaTotal>1 ? it.parcelaIdx : 1)-1), venc.getDate()) : null;
+        var d = it.date ? parseDateAtStart(it.date, ref) : null;
+        return { data: d ? d.iso : null, desc: it.desc, amount: it.amount, parcelaIdx: it.parcelaIdx, parcelaTotal: it.parcelaTotal, hint: it.hint, suspect: it.suspect };
+      });
+      return { source:"Fatura Itaú · "+g.name+(g.final ? " (final "+g.final+")" : ""), fileName:fileName, kind:"cartao", outflowSign:1, txs:txs,
+               total: g.hasTotal ? g.total : null, faturaMonth: venc ? firstOfMonth(venc) : null, mixedHolders: g.key==="_titular" };
+    }
+    var docs = order.map(function(k){ return groups[k]; }).filter(function(g){ return g.txs.length; }).map(function(g){
+      return { name: g.name, sub: (g.final ? "final "+g.final : "")+(g.hasTotal ? " — total "+formatMoney(g.total) : ""), doc: toDoc(g) };
+    });
+    if(docs.length>1){
+      var all = { source:"Fatura Itaú · todos os titulares", fileName:fileName, kind:"cartao", outflowSign:1, txs:[], total:0, faturaMonth: venc ? firstOfMonth(venc) : null };
+      docs.forEach(function(d){
+        all.txs = all.txs.concat(d.doc.txs);
+        all.total = (all.total==null || d.doc.total==null) ? null : Math.round((all.total+d.doc.total)*100)/100;
+      });
+      docs.push({ name:"Todos os titulares de uma vez", sub: all.total!=null ? "total "+formatMoney(all.total) : "", doc: all });
+    }
+    return docs;
   }
 
   /* ---------- categorização automática ---------- */
@@ -1485,7 +1516,7 @@
   // Organizze, Minhas Economias). A primeira regra que casar vence, então as específicas (iFood,
   // Amazon Prime, clínica veterinária) vêm antes das genéricas (restaurante, Amazon, clínica).
   var CATEGORIA_REGRAS = [
-    ["Tarifas e juros", /\b(iof|anuidade|tarifa|juros|encargos?|mora|cesta de servicos|pacote de servicos|avaliacao emergencial|seguro (do )?cartao|protecao (do )?cartao)\b/],
+    ["Tarifas e juros", /\b(iof|anuidade|tarifa|juros|encargos?|mora|multa por atraso|cesta de servicos|pacote de servicos|avaliacao emergencial|seguro (do )?cartao|protecao (do )?cartao)\b/],
     ["Delivery", /(ifood|rappi|uber ?eats|james ?delivery|ze delivery|aiqfome|99 ?food|\bdaki\b|delivery)/],
     ["Assinaturas", /(netflix|spotify|disney ?(\+|plus)|disneyplus|\bhbo\b|prime ?video|amazon ?prime|amazonprime|apple\.com|apple com bill|itunes|icloud|google ?one|google ?storage|youtube ?premium|youtubepremium|globoplay|paramount|deezer|\bcanva\b|chatgpt|openai|anthropic|claude\.ai|microsoft ?365|office ?365|\bmsft\b|adobe|dropbox|crunchyroll|star ?plus|telecine|\bmubi\b|audible|kindle unlimited|game ?pass|playstation ?plus|\bps ?plus\b|nintendo ?online|tinder|bumble|linkedin|notion|totalpass|wellhub|gympass|assinatura)/],
     ["Educação", /(escola|colegio|faculdade|universidade|\bcurso|udemy|alura|coursera|hotmart|eduzz|kiwify|livraria|saraiva|idiomas|\bwizard\b|\bccaa\b|\bfisk\b|\bcna\b|open english|duolingo|papelaria|kalunga|material escolar|\bsenai\b|\bsesi\b|\bsenac\b|anhanguera|\bestacio\b|\bunip\b|\bfmu\b|mackenzie|\bfgv\b|insper|descomplica|\bead\b|educacao|ensino|kumon|\bschool\b)/],
@@ -1869,26 +1900,13 @@
              faturaMonth: (isCard && venc) ? firstOfMonth(venc) : null };
   }
 
-  function itauSectionToDoc(section, rows, fullText, fileName){
-    var venc = findVencimentoDate(fullText);
-    var txs = extractSectionItems(rows, section).map(function(it){
-      var d = parseDateAtStart(it.date, venc);
-      return { data: d ? d.iso : null, desc: it.estab, amount: it.valor, parcelaIdx: it.parcelaIdx, parcelaTotal: it.parcelaTotal,
-               hint: it.categoriaRaw ? it.categoriaRaw.split(".")[0] : null, suspect: it.suspect };
-    });
-    return { source:"Fatura Itaú"+(section.final ? " (final "+section.final+")" : ""), fileName:fileName, kind:"cartao", outflowSign:1, txs:txs,
-             total: section.total ? parseValorBR(section.total) : null, faturaMonth: venc ? firstOfMonth(venc) : null, mixedHolders: !section.final };
-  }
-
   function readPdfDoc(buf, fileName){
     if(typeof pdfjsLib === "undefined") return Promise.reject(new Error("pdfjs indisponível"));
     return extractPdfRows(buf).then(function(res){
       var rows = res.rows, fullText = res.fullText;
       if(/ita[uú]/i.test(fullText)){
-        var sections = findCardholderSections(rows, fullText);
-        if(sections.length){
-          return { sections: sections.map(function(s){ return { label:s, doc: itauSectionToDoc(s, rows, fullText, fileName) }; }) };
-        }
+        var docs = parseItauFatura(rows, fullText, fileName);
+        if(docs.length) return { sections: docs };
       }
       return parseGenericPdf(rows, fullText, fileName);
     });
@@ -2170,9 +2188,7 @@
   function renderCardholderPicker(options){
     var pickerEl = document.getElementById("fatura-cardholder-picker");
     pickerEl.innerHTML = options.map(function(o, i){
-      var s = o.label;
-      var sub = (s.final ? ("final "+s.final) : "") + (s.total ? (" — total "+formatMoney(parseValorBR(s.total))) : "");
-      return '<button type="button" class="cardholder-btn" data-idx="'+i+'">'+escapeXml(s.name)+'<span class="ch-sub">'+escapeXml(sub)+'</span></button>';
+      return '<button type="button" class="cardholder-btn" data-idx="'+i+'">'+escapeXml(o.name)+'<span class="ch-sub">'+escapeXml(o.sub||"")+'</span></button>';
     }).join("");
     pickerEl.querySelectorAll(".cardholder-btn").forEach(function(btn){
       btn.addEventListener("click", function(){ startImport(options[parseInt(btn.dataset.idx,10)].doc); });
@@ -2203,7 +2219,7 @@
           statusEl.textContent = "Encontrei os lançamentos desta fatura. Confira, ajuste o que precisar e importe:";
           startImport(result.sections[0].doc);
         } else {
-          statusEl.textContent = "Encontrei "+result.sections.length+" titular(es) nesta fatura. Escolha qual importar:";
+          statusEl.textContent = "Encontrei "+result.sections.filter(function(o){ return o.doc.source.indexOf("todos os titulares")===-1; }).length+" grupo(s) de lançamentos nesta fatura. Escolha qual importar (ou todos de uma vez):";
           renderCardholderPicker(result.sections);
         }
         return;
