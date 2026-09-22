@@ -1245,7 +1245,7 @@
   // smallest real line-to-line gap actually observed on this page, so tightly-packed faturas
   // don't get two distinct transactions merged into one garbled row.
   function computeRowTolerance(items){
-    var ys = items.map(function(it){ return it.transform[5]; }).sort(function(a,b){ return b-a; });
+    var ys = items.map(function(it){ return it.y; }).sort(function(a,b){ return b-a; });
     var gaps = [];
     for(var i=1;i<ys.length;i++){
       var g = ys[i-1]-ys[i];
@@ -1256,65 +1256,116 @@
     return Math.min(0.6, Math.max(0.15, gaps[0]*0.25));
   }
 
+  // Ícones soltos da fatura (@ = cartão virtual, setinha = aproximação) não são texto útil e,
+  // se ficarem, grudam no começo ou no fim da linha e atrapalham a leitura.
+  function isIconItem(str){
+    var t = String(str).trim();
+    return t.length>0 && t.length<=2 && !/[\p{L}\p{N}\-−*$,]/u.test(t);
+  }
+
+  var PDF_DATE_ITEM_RE = /^\W{0,2}\d{2}\/\d{2}(\s|$)/;
+  var PDF_COL_HEADER_RE = /^(Lançamentos|DATA\b)|\(final\s*\d{4}\)/;
+
+  // Descobre as colunas de CADA página pela posição das datas dos lançamentos. Não dá pra usar uma
+  // posição fixa para o documento inteiro: na fatura Itaú, a página com o quadro "Somente para
+  // correntistas" tem as colunas deslocadas para a direita em relação às outras páginas.
+  // Devolve onde começa a coluna da direita (split) e onde começa a da esquerda (leftStart); o que
+  // estiver antes de leftStart é o quadro lateral e fica separado.
+  function detectPageColumns(p){
+    var dates = p.items.filter(function(it){ return PDF_DATE_ITEM_RE.test(it.text.trim()); })
+      .sort(function(a,b){ return a.x-b.x; });
+    var clusters = [];
+    dates.forEach(function(it){
+      var c = clusters[clusters.length-1];
+      if(c && it.x-c.maxX<=6){ c.maxX = it.x; c.n++; }
+      else clusters.push({ minX:it.x, maxX:it.x, n:1 });
+    });
+    clusters = clusters.filter(function(c){ return c.n>=2; }).sort(function(a,b){ return b.n-a.n; });
+    // cabeçalhos e datas com ícone grudado ("@ 07/04") começam um pouco antes da coluna das datas
+    var anchors = p.items.filter(function(it){ return PDF_COL_HEADER_RE.test(it.text.trim()); }).concat(dates);
+    var headers = anchors;
+    function colStart(c){
+      var start = c.minX;
+      anchors.forEach(function(h){ if(h.x<start && h.x>=c.minX-40) start = h.x; });
+      return start-2;
+    }
+    var mid = p.width*0.4, left = null, right = null;
+    if(clusters.length>=2){
+      var a = clusters[0], b = null;
+      for(var i=1;i<clusters.length;i++){ if(Math.abs(clusters[i].minX-a.minX)>p.width*0.25){ b = clusters[i]; break; } }
+      if(b){ left = a.minX<b.minX ? a : b; right = a.minX<b.minX ? b : a; }
+      else if(a.minX>mid) right = a; else left = a;
+    } else if(clusters.length===1){
+      if(clusters[0].minX>mid) right = clusters[0]; else left = clusters[0];
+    }
+    if(!right){
+      var rh = headers.filter(function(h){ return h.x>mid && /^Lançamentos/.test(h.text.trim()); });
+      if(rh.length) right = { minX: Math.min.apply(null, rh.map(function(h){ return h.x; })) };
+    }
+    return { split: right ? colStart(right) : null, leftStart: (left && right) ? colStart(left) : null };
+  }
+
+  function groupRows(items){
+    var tol = computeRowTolerance(items);
+    var rows = [];
+    items.forEach(function(it){
+      var row = null;
+      for(var i=0;i<rows.length;i++){ if(Math.abs(rows[i].y-it.y)<tol){ row=rows[i]; break; } }
+      if(!row){ row = { y:it.y, items:[] }; rows.push(row); }
+      row.items.push(it);
+    });
+    rows.forEach(function(r){ r.items.sort(function(a,b){ return a.x-b.x; }); });
+    rows.sort(function(a,b){ return b.y-a.y; });
+    return rows;
+  }
+
   async function extractPdfRows(arrayBuffer){
     var pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    var pages = [];
-    var boundaryXs = [];
+    var allRows = [], naturalText = [];
     for(var pageNum=1; pageNum<=pdf.numPages; pageNum++){
       var page = await pdf.getPage(pageNum);
       var content = await page.getTextContent();
-      var items = content.items.filter(function(it){ return it.str && it.str.length>0; });
-      pages.push({ pageNum: pageNum, items: items });
-      items.forEach(function(it){
-        if(it.str.indexOf("Lançamentos:")===0) boundaryXs.push(it.transform[4]);
-      });
-    }
-    // The 2-column x-positions are fixed by the page template and don't change from page to
-    // page — but the "Lançamentos:" header text that reveals them is only printed once (or on
-    // some pages, not at all, e.g. a continuation page). Compute the boundary ONCE from
-    // whichever page(s) do show it, and reuse it for every page, so a continuation page
-    // without its own header still gets its left/right columns split apart instead of having
-    // both columns' text (potentially two different cardholders) glued into one row.
-    var boundary = null;
-    if(boundaryXs.length>=2){
-      var xs = boundaryXs.slice().sort(function(a,b){ return a-b; });
-      boundary = xs[xs.length-1];
-    }
-    var allRows = [];
-    pages.forEach(function(p){
-      var items = p.items;
-      if(!items.length) return;
-      var tol = computeRowTolerance(items);
-      var rows = [];
-      items.forEach(function(it){
-        var y = it.transform[5], x = it.transform[4];
-        var row = null;
-        for(var i=0;i<rows.length;i++){ if(Math.abs(rows[i].y-y)<tol){ row=rows[i]; break; } }
-        if(!row){ row = { y:y, items:[] }; rows.push(row); }
-        row.items.push({ x:x, text:it.str });
-      });
-      rows.forEach(function(r){ r.items.sort(function(a,b){ return a.x-b.x; }); });
-      rows.sort(function(a,b){ return b.y-a.y; });
-      if(boundary!=null){
-        // Itaú prints a continuous newspaper-style flow: the whole left column top-to-bottom,
-        // THEN the whole right column top-to-bottom — not interleaved row by row.
-        var leftRows = [], rightRows = [];
-        rows.forEach(function(r){
-          var left = r.items.filter(function(it){ return it.x<boundary; });
-          var right = r.items.filter(function(it){ return it.x>=boundary; });
-          if(left.length) leftRows.push({ page:p.pageNum, col:"L", y:r.y, text: joinRowItems(left) });
-          if(right.length) rightRows.push({ page:p.pageNum, col:"R", y:r.y, text: joinRowItems(right) });
-        });
-        allRows = allRows.concat(leftRows, rightRows);
-      } else {
-        rows.forEach(function(r){ allRows.push({ page:p.pageNum, col:"A", y:r.y, text: joinRowItems(r.items) }); });
+      var items = content.items
+        .filter(function(it){ return it.str && it.str.length>0 && !isIconItem(it.str); })
+        .map(function(it){ return { x:it.transform[4], y:it.transform[5], w:it.width||0, text:it.str }; });
+      if(!items.length) continue;
+      var p = { pageNum:pageNum, items:items, width: page.view[2]-page.view[0] };
+      var rows = groupRows(items);
+      // texto na ordem natural da página, pra buscas como "Vencimento: dd/mm/aaaa"
+      rows.forEach(function(r){ naturalText.push(joinRowItems(r.items)); });
+      var cols = detectPageColumns(p);
+      if(cols.split==null){
+        rows.forEach(function(r){ allRows.push({ page:pageNum, col:"A", y:r.y, text: joinRowItems(r.items) }); });
+        continue;
       }
-    });
-    return allRows;
+      // A fatura corre como jornal: coluna da esquerda inteira, depois a da direita, e na página
+      // seguinte continua pela esquerda. O quadro lateral vai separado (col "S") e é ignorado.
+      var side = [], leftRows = [], rightRows = [];
+      rows.forEach(function(r){
+        var sd = [], l = [], rt = [];
+        r.items.forEach(function(it){
+          if(it.x>=cols.split) rt.push(it);
+          else if(cols.leftStart!=null && it.x<cols.leftStart) sd.push(it);
+          else l.push(it);
+        });
+        if(sd.length) side.push({ page:pageNum, col:"S", y:r.y, text: joinRowItems(sd) });
+        if(l.length) leftRows.push({ page:pageNum, col:"L", y:r.y, text: joinRowItems(l) });
+        if(rt.length) rightRows.push({ page:pageNum, col:"R", y:r.y, text: joinRowItems(rt) });
+      });
+      allRows = allRows.concat(side, leftRows, rightRows);
+    }
+    return { rows: allRows, fullText: naturalText.join(" ") };
   }
 
+  // Junta os pedaços de texto de uma linha, pondo espaço quando há distância entre eles na página.
   function joinRowItems(items){
-    return items.map(function(it){ return it.text; }).join("").replace(/\s+/g," ").trim();
+    var out = "", prevEnd = null;
+    items.forEach(function(it){
+      if(prevEnd!=null && it.x-prevEnd>1.5 && !/\s$/.test(out) && !/^\s/.test(it.text)) out += " ";
+      out += it.text;
+      prevEnd = it.x + (it.w||0);
+    });
+    return out.replace(/\s+/g," ").trim();
   }
 
   function findTitularName(fullText){
@@ -1382,7 +1433,7 @@
     return sections;
   }
 
-  var TXN_RE = /^(\d{2}\/\d{2})\s+(.+?)\s+(-)?\s*([\d.]+,\d{2})$/;
+  var TXN_RE = /^\W{0,3}?(\d{2}\/\d{2})\s+(.+?)\s+(-)?\s*([\d.]+,\d{2})\W{0,3}$/;
   var TXN_PARCELA_RE = /(\d{2})\/(\d{2})$/;
 
   // A merchant name that still contains a currency-like number or a date/parcela pattern
@@ -1397,6 +1448,7 @@
     var last = null;
     for(var i=section.startIdx+1; i<section.endIdx; i++){
       var r = rows[i];
+      if(r.col==="S") continue;
       if(/^DATA ESTABELECIMENTO/.test(r.text) || /^Lançamentos:/.test(r.text)) continue;
       var mt = TXN_RE.exec(r.text);
       if(mt){
@@ -1436,7 +1488,7 @@
     ["Tarifas e juros", /\b(iof|anuidade|tarifa|juros|encargos?|mora|cesta de servicos|pacote de servicos|avaliacao emergencial|seguro (do )?cartao|protecao (do )?cartao)\b/],
     ["Delivery", /(ifood|rappi|uber ?eats|james ?delivery|ze delivery|aiqfome|99 ?food|\bdaki\b|delivery)/],
     ["Assinaturas", /(netflix|spotify|disney ?(\+|plus)|disneyplus|\bhbo\b|prime ?video|amazon ?prime|amazonprime|apple\.com|apple com bill|itunes|icloud|google ?one|google ?storage|youtube ?premium|youtubepremium|globoplay|paramount|deezer|\bcanva\b|chatgpt|openai|anthropic|claude\.ai|microsoft ?365|office ?365|\bmsft\b|adobe|dropbox|crunchyroll|star ?plus|telecine|\bmubi\b|audible|kindle unlimited|game ?pass|playstation ?plus|\bps ?plus\b|nintendo ?online|tinder|bumble|linkedin|notion|totalpass|wellhub|gympass|assinatura)/],
-    ["Educação", /(escola|colegio|faculdade|universidade|\bcurso|udemy|alura|coursera|hotmart|eduzz|kiwify|livraria|saraiva|idiomas|\bwizard\b|\bccaa\b|\bfisk\b|\bcna\b|open english|duolingo|papelaria|kalunga|material escolar|\bsenai\b|\bsesi\b|\bsenac\b|anhanguera|estacio|\bunip\b|\bfmu\b|mackenzie|\bfgv\b|insper|descomplica|\bead\b|educacao|ensino|kumon|\bschool\b)/],
+    ["Educação", /(escola|colegio|faculdade|universidade|\bcurso|udemy|alura|coursera|hotmart|eduzz|kiwify|livraria|saraiva|idiomas|\bwizard\b|\bccaa\b|\bfisk\b|\bcna\b|open english|duolingo|papelaria|kalunga|material escolar|\bsenai\b|\bsesi\b|\bsenac\b|anhanguera|\bestacio\b|\bunip\b|\bfmu\b|mackenzie|\bfgv\b|insper|descomplica|\bead\b|educacao|ensino|kumon|\bschool\b)/],
     ["Pets", /(petz|cobasi|petlove|pet ?shop|veterinari|\bvet\b|racao|\bpet\b)/],
     ["Saúde", /(drogaria|farmacia|drogasil|droga ?raia|\braia\b|pague menos|panvel|drogao|ultrafarma|hospital|clinica|laborator|fleury|\bdasa\b|lavoisier|delboni|\bamil\b|bradesco saude|sulamerica saude|unimed|hapvida|notre ?dame|intermedica|dentista|odonto|psicolog|fisioterap|nutricion|\bmedic|otica|oculos|smart ?fit|bluefit|bodytech|selfit|academia|crossfit|pilates)/],
     ["Seguros", /(\bseguros?\b|porto seguro|tokio marine|allianz|mapfre|\byouse\b|\bsuhai\b)/],
@@ -1830,8 +1882,8 @@
 
   function readPdfDoc(buf, fileName){
     if(typeof pdfjsLib === "undefined") return Promise.reject(new Error("pdfjs indisponível"));
-    return extractPdfRows(buf).then(function(rows){
-      var fullText = rows.map(function(r){ return r.text; }).join(" ");
+    return extractPdfRows(buf).then(function(res){
+      var rows = res.rows, fullText = res.fullText;
       if(/ita[uú]/i.test(fullText)){
         var sections = findCardholderSections(rows, fullText);
         if(sections.length){
@@ -1897,15 +1949,18 @@
       var valor = Math.round(Math.abs(tx.amount)*100)/100 * (isCredit ? -1 : 1);
       var mesKey = (IMPORT.aloc==="data" && tx.data) ? tx.data.slice(0,7) : IMPORT.mesKey;
       var n = normalizeText(tx.desc);
-      var reasons = [];
-      if(isCredit) reasons.push("entrada / estorno");
+      var reasons = [], info = [];
+      if(isCredit){
+        if(IMPORT.kind==="cartao" && !/pagamento|pagto|pgto/.test(n)) info.push("estorno (abate do total)");
+        else reasons.push("entrada / estorno");
+      }
       if(PAGAMENTO_FATURA_RE.test(n)) reasons.push("pagamento de fatura");
       if(INVESTIMENTO_RE.test(n)) reasons.push("investimento");
       if(isDuplicate(index, tx, valor, mesKey)) reasons.push("já lançado");
       if(tx.suspect) reasons.push("conferir descrição");
       var categoria = st.categoria || guessCategoria(tx.desc, tx.hint);
       return {
-        tx: tx, i: i, valor: valor, mesKey: mesKey, reasons: reasons,
+        tx: tx, i: i, valor: valor, mesKey: mesKey, reasons: reasons, info: info,
         checked: st.checked!=null ? st.checked : reasons.length===0,
         desc: st.desc!=null ? st.desc : tx.desc,
         categoria: categoria,
@@ -1926,6 +1981,7 @@
         var warn = x==="conferir descrição" || x==="já lançado";
         return '<span class="imp-tag'+(warn?" warn":"")+'">'+escapeXml(x)+'</span>';
       }).join("");
+      r.info.forEach(function(x){ tags += '<span class="imp-tag">'+escapeXml(x)+'</span>'; });
       if(r.learned) tags += '<span class="imp-tag" title="Categoria/tipo vindos de uma correção sua anterior">aprendido</span>';
       var parcela = tx.parcelaTotal>1 ? (tx.parcelaIdx+"/"+tx.parcelaTotal) : "—";
       if(tx.parcelaTotal>1 && tx.parcelaIdx<tx.parcelaTotal) parcela += '<span class="ch-sub">+'+(tx.parcelaTotal-tx.parcelaIdx)+' mês(es)</span>';
