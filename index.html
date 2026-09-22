@@ -126,6 +126,8 @@
     color:var(--text-secondary);
   }
   .tab-btn.active{ background:var(--surface); color:var(--text-primary); box-shadow:var(--shadow); }
+  .tabs{ overflow-x:auto; }
+  @media (max-width:640px){ .tab-btn{ padding:8px 10px; font-size:13px; white-space:nowrap; } }
   .tab-panel[hidden]{ display:none; }
 
   .summary-row{
@@ -152,6 +154,7 @@
     background:var(--surface-2); border:1px dashed var(--border); border-radius:10px;
     padding:10px 14px; font-size:13px; color:var(--text-secondary); margin-bottom:18px;
   }
+  .examples-banner[hidden]{ display:none; }
   .btn-ghost{
     appearance:none; border:1px solid var(--border); background:var(--surface);
     color:var(--text-primary); border-radius:8px; padding:6px 12px; font-size:12px;
@@ -172,7 +175,14 @@
   .btn-add:hover{ opacity:0.88; }
 
   .table-wrap{ overflow-x:auto; }
-  table.expense-table{ width:100%; border-collapse:collapse; min-width:520px; }
+  table.expense-table{ width:100%; border-collapse:collapse; min-width:660px; }
+  .col-data{ width:138px; }
+  .input-data{
+    width:100%; border:1px solid transparent; background:transparent; border-radius:8px;
+    padding:6px 4px; font-size:13px; color:var(--text-secondary); outline:none;
+  }
+  .input-data:hover{ border-color:var(--border); }
+  .input-data:focus{ border-color:var(--fixo); background:var(--surface-2); }
   .expense-table th{
     text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.04em;
     color:var(--text-muted); font-weight:700; padding:0 8px 8px; border-bottom:1px solid var(--border);
@@ -244,7 +254,12 @@
     padding:8px 10px; box-shadow:var(--shadow); width:max-content; max-width:100%;
   }
   .month-nav-label{ font-weight:700; font-size:14px; width:216px; text-align:center; text-transform:capitalize; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .month-nav .btn-ghost{ width:32px; height:32px; display:flex; align-items:center; justify-content:center; padding:0; font-size:16px; line-height:1; }
+  .month-nav .btn-ghost{ height:32px; display:flex; align-items:center; justify-content:center; }
+  .month-nav #mes-prev, .month-nav #mes-next{ width:32px; padding:0; font-size:16px; line-height:1; }
+  @media (max-width:640px){
+    .month-nav{ flex-wrap:wrap; width:auto; }
+    .month-nav-label{ width:auto; flex:1 1 120px; }
+  }
   .month-nav-readonly{ font-size:13px; color:var(--text-secondary); margin-bottom:14px; font-weight:600; text-transform:capitalize; }
 
   .col-parcelas{ width:96px; text-align:center; }
@@ -301,6 +316,43 @@
     display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:space-between;
     margin:12px 0; padding:10px 12px; border-radius:10px; font-size:13px; font-weight:600;
   }
+  .fatura-preview-table .col-fp-data{ white-space:nowrap; color:var(--text-secondary); font-variant-numeric:tabular-nums; }
+  .fatura-preview-table .col-fp-parcela{ white-space:nowrap; }
+  .fatura-preview-table .is-credit{ color:var(--good); }
+  .fatura-preview-table tr.is-off td{ opacity:0.5; }
+  .fatura-preview-table tr.is-off td.col-check{ opacity:1; }
+  .fp-desc{
+    width:100%; min-width:170px; border:1px solid transparent; background:transparent; border-radius:6px;
+    padding:4px 6px; font-size:13px; color:var(--text-primary); outline:none;
+  }
+  .fp-desc:hover{ border-color:var(--border); }
+  .fp-desc:focus{ border-color:var(--fixo); background:var(--surface-2); }
+  .imp-tags{ display:flex; flex-wrap:wrap; gap:4px; margin:2px 0 0 6px; }
+  .imp-tag{
+    font-size:11px; font-weight:600; padding:1px 7px; border-radius:6px;
+    background:var(--surface-2); color:var(--text-muted); border:1px solid var(--border);
+  }
+  .imp-tag.warn{ color:var(--superfluo); border-color:var(--superfluo-soft); background:var(--superfluo-soft); }
+  .imp-options{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:12px 0 4px; font-size:13px; color:var(--text-secondary); }
+  .imp-options label{ display:flex; align-items:center; gap:6px; font-weight:600; }
+  .imp-options select, .imp-options input[type=month]{
+    border:1px solid var(--border); background:var(--surface); color:var(--text-primary);
+    border-radius:8px; padding:6px 8px; font-size:13px;
+  }
+  .imp-options input[disabled]{ opacity:0.45; }
+  #fatura-confirm-btn[disabled]{ opacity:0.4; cursor:not-allowed; }
+
+  .consulta-filtros{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:12px; }
+  .consulta-input{
+    border:1px solid var(--border); background:var(--surface); color:var(--text-primary);
+    border-radius:8px; padding:8px 10px; font-size:13px;
+  }
+  .consulta-busca{ flex:1 1 220px; min-width:0; }
+  .consulta-label{ display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--text-secondary); }
+  .consulta-table tbody tr{ cursor:pointer; }
+  .consulta-table tbody tr:hover td{ background:var(--surface-2); }
+  .consulta-table td{ white-space:nowrap; }
+  .consulta-table td.q-desc{ white-space:normal; min-width:160px; }
   .fatura-check-row.match{ background:var(--fixo-soft); color:var(--fixo); }
   .fatura-check-row.mismatch{ background:var(--superfluo-soft); color:var(--superfluo); }
 
@@ -333,6 +385,7 @@
     <button class="tab-btn active" data-tab="lancamentos" role="tab" aria-selected="true">Lançamentos</button>
     <button class="tab-btn" data-tab="graficos" role="tab" aria-selected="false">Gráficos</button>
     <button class="tab-btn" data-tab="timeline" role="tab" aria-selected="false">Linha do tempo</button>
+    <button class="tab-btn" data-tab="consultar" role="tab" aria-selected="false">Consultar</button>
   </nav>
 
   <section id="tab-lancamentos" class="tab-panel">
@@ -352,12 +405,13 @@
     </div>
 
     <details class="expense-card" id="import-card">
-      <summary>Importar vários gastos de uma vez</summary>
+      <summary>Importar extrato ou fatura (Inter, Itaú e outros bancos)</summary>
 
       <div class="fatura-upload-block">
-        <p class="empty-note">Suba o PDF de uma fatura ou extrato e o app tenta reconhecer os lançamentos, sugerindo categoria e fixo/supérfluo. Você sempre confere antes de importar.</p>
-        <label class="btn-add fatura-upload-label" for="fatura-file-input">📄 Selecionar PDF da fatura/extrato
-          <input type="file" id="fatura-file-input" accept="application/pdf" hidden>
+        <p class="empty-note">Suba o extrato da conta ou a fatura do cartão em <strong>PDF, CSV, OFX ou Excel</strong>. O app lê data, descrição e valor de cada gasto, sugere a categoria (e aprende com as suas correções), distribui as parcelas nos meses seguintes e avisa o que já foi lançado antes. Você confere tudo antes de gravar.</p>
+        <p class="empty-note">Onde baixar: <strong>Inter</strong> — app › Extrato (ou Cartões › Fatura) › ícone de compartilhar/exportar. <strong>Itaú</strong> — Extrato › "Salvar como" PDF/Excel/OFX, ou a fatura do cartão em PDF.</p>
+        <label class="btn-add fatura-upload-label" for="fatura-file-input">📄 Selecionar arquivo do extrato/fatura
+          <input type="file" id="fatura-file-input" accept=".pdf,.csv,.txt,.ofx,.qfx,.xls,.xlsx,application/pdf,text/csv" hidden>
         </label>
         <p class="empty-note" id="fatura-status"></p>
         <div id="fatura-cardholder-picker"></div>
@@ -385,9 +439,9 @@
       </div>
       <div class="table-wrap">
         <table class="expense-table">
-          <thead><tr><th>Descrição</th><th>Categoria</th><th class="col-valor">Valor</th><th class="col-parcelas">Parcelas</th><th></th></tr></thead>
+          <thead><tr><th class="col-data">Data</th><th>Descrição</th><th>Categoria</th><th class="col-valor">Valor</th><th class="col-parcelas">Parcelas</th><th></th></tr></thead>
           <tbody id="tbody-fixo"></tbody>
-          <tfoot><tr><td colspan="2">Total gastos fixos</td><td class="col-valor" id="total-fixo-cell">R$ 0,00</td><td></td><td></td></tr></tfoot>
+          <tfoot><tr><td colspan="3">Total gastos fixos</td><td class="col-valor" id="total-fixo-cell">R$ 0,00</td><td></td><td></td></tr></tfoot>
         </table>
       </div>
     </div>
@@ -399,13 +453,13 @@
       </div>
       <div class="table-wrap">
         <table class="expense-table">
-          <thead><tr><th>Descrição</th><th>Categoria</th><th class="col-valor">Valor</th><th class="col-parcelas">Parcelas</th><th></th></tr></thead>
+          <thead><tr><th class="col-data">Data</th><th>Descrição</th><th>Categoria</th><th class="col-valor">Valor</th><th class="col-parcelas">Parcelas</th><th></th></tr></thead>
           <tbody id="tbody-superfluo"></tbody>
-          <tfoot><tr><td colspan="2">Total gastos supérfluos</td><td class="col-valor" id="total-superfluo-cell">R$ 0,00</td><td></td><td></td></tr></tfoot>
+          <tfoot><tr><td colspan="3">Total gastos supérfluos</td><td class="col-valor" id="total-superfluo-cell">R$ 0,00</td><td></td><td></td></tr></tfoot>
         </table>
       </div>
     </div>
-    <p class="footer-note">Os dados ficam salvos neste painel, mês a mês — pode fechar e voltar quando quiser. Em "Parcelas", informe em quantos meses seguintes esse gasto deve se repetir automaticamente.</p>
+    <p class="footer-note">Os dados ficam salvos no banco de dados, mês a mês — pode fechar e voltar quando quiser, e buscar qualquer gasto na aba "Consultar". Em "Parcelas", informe em quantos meses esse gasto deve se repetir automaticamente. Ao trocar a categoria de um gasto, o app aprende e usa isso nas próximas importações.</p>
   </section>
 
   <section id="tab-graficos" class="tab-panel" hidden>
@@ -449,6 +503,34 @@
     </div>
   </section>
 
+  <section id="tab-consultar" class="tab-panel" hidden>
+    <div class="expense-card">
+      <div class="consulta-filtros">
+        <input type="search" id="q-texto" class="consulta-input consulta-busca" placeholder="Buscar por descrição (ex.: ifood, escola)…">
+        <select id="q-categoria" class="consulta-input"><option value="">Todas as categorias</option></select>
+        <select id="q-tipo" class="consulta-input">
+          <option value="">Fixos e supérfluos</option>
+          <option value="fixo">Só fixos</option>
+          <option value="superfluo">Só supérfluos</option>
+        </select>
+        <label class="consulta-label">De <input type="month" id="q-de" class="consulta-input"></label>
+        <label class="consulta-label">Até <input type="month" id="q-ate" class="consulta-input"></label>
+      </div>
+      <div class="fatura-check-row" id="q-resumo"></div>
+      <div class="table-wrap">
+        <table class="fatura-preview-table consulta-table">
+          <thead><tr><th>Mês</th><th>Data</th><th>Descrição</th><th>Categoria</th><th>Tipo</th><th class="col-fp-valor">Valor</th><th>Parcela</th></tr></thead>
+          <tbody id="q-tbody"></tbody>
+        </table>
+      </div>
+      <p class="empty-note" id="q-nota"></p>
+    </div>
+    <div class="chart-card">
+      <h2>Por categoria no resultado</h2>
+      <div id="q-chart"></div>
+    </div>
+  </section>
+
   <div id="tooltip" class="tooltip" hidden></div>
 </div>
 
@@ -456,7 +538,14 @@
 (function(){
   "use strict";
 
-  var CATEGORIAS = ["Moradia","Contas (água/luz/net)","Alimentação","Delivery","Mercado","Transporte","Saúde","Educação","Lazer","Assinaturas","Vestuário","Outros"];
+  // Nomes antigos mantidos (lançamentos já salvos usam eles); os novos seguem a divisão usada por
+  // apps como Mobills e Organizze.
+  var CATEGORIAS = ["Moradia","Contas (água/luz/net)","Mercado","Alimentação","Delivery","Transporte","Saúde","Educação","Lazer","Viagem","Assinaturas","Compras","Vestuário","Cuidados pessoais","Pets","Seguros","Impostos e taxas","Tarifas e juros","Presentes e doações","Transferências","Outros"];
+  // Tipo sugerido quando o estabelecimento ainda não foi aprendido.
+  var CATEGORIA_TIPO_PADRAO = {
+    "Moradia":"fixo", "Contas (água/luz/net)":"fixo", "Mercado":"fixo", "Transporte":"fixo", "Saúde":"fixo",
+    "Educação":"fixo", "Pets":"fixo", "Seguros":"fixo", "Impostos e taxas":"fixo"
+  };
 
   var EXAMPLE_ITEMS = [
     {desc:"Aluguel", categoria:"Moradia", tipo:"fixo", valor:2200, isExample:true},
@@ -545,8 +634,15 @@
     return String(estab||"").toUpperCase().replace(/\s+/g," ").trim();
   }
 
+  // Chave "solta": ignora acentos, pontuação e códigos numéricos que mudam a cada compra
+  // ("IFOOD *IFOOD 84512" e "IFOOD*IFOOD" viram a mesma regra).
+  function merchantLooseKey(estab){
+    return String(estab||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toUpperCase()
+      .replace(/\d{3,}/g," ").replace(/[^A-Z0-9 ]+/g," ").replace(/\s+/g," ").trim();
+  }
+
   function learnMerchantRule(estab, categoria, tipo){
-    var key = normalizeMerchantKey(estab);
+    var key = merchantLooseKey(estab);
     if(!key) return;
     STATE.merchantRules[key] = { categoria: categoria, tipo: tipo };
     if(mode==="firebase"){
@@ -573,7 +669,9 @@
       return Promise.resolve(null);
     },
     addItem: function(tipo){
-      var item = { desc:"", categoria: CATEGORIAS[CATEGORIAS.length-1], tipo: tipo, valor:0, isExample:false, createdAt: Date.now(), mesRef: viewedMonthKey(), parcelaTotal:1, parcelaIndex:1, parcelaGrupo:null };
+      var hoje = new Date();
+      var data = viewedMonthKey()===mesKeyOf(hoje) ? mesKeyOf(hoje)+"-"+String(hoje.getDate()).padStart(2,"0") : null;
+      var item = { desc:"", categoria: CATEGORIAS[CATEGORIAS.length-1], tipo: tipo, valor:0, isExample:false, createdAt: Date.now(), mesRef: viewedMonthKey(), parcelaTotal:1, parcelaIndex:1, parcelaGrupo:null, data: data, origem:"manual" };
       if(mode==="firebase"){
         var ref = db.ref(FIREBASE_PATH+"/items").push();
         var full = Object.assign({id:ref.key}, item);
@@ -600,7 +698,7 @@
         siblings.push({
           desc:item.desc, categoria:item.categoria, tipo:item.tipo, valor:item.valor, isExample:false,
           createdAt: Date.now()+k, mesRef: addMonthsToKey(item.mesRef, k),
-          parcelaGrupo:id, parcelaIndex:k+1, parcelaTotal:n
+          parcelaGrupo:id, parcelaIndex:k+1, parcelaTotal:n, data:null, origem:"manual"
         });
       }
       if(mode==="firebase"){
@@ -659,7 +757,8 @@
   /* ---------- row rendering ---------- */
 
   function categoriaOptions(selected){
-    return CATEGORIAS.map(function(c){
+    var lista = (selected && CATEGORIAS.indexOf(selected)===-1) ? CATEGORIAS.concat([selected]) : CATEGORIAS;
+    return lista.map(function(c){
       return '<option value="'+escapeAttr(c)+'"'+(c===selected?" selected":"")+'>'+escapeXml(c)+"</option>";
     }).join("");
   }
@@ -679,6 +778,7 @@
     var tr = document.createElement("tr");
     tr.setAttribute("data-id", item.id);
     tr.innerHTML =
+      '<td class="col-data"><input class="input-data" type="date" value="'+escapeAttr(item.data||"")+'" title="Data do gasto"></td>' +
       '<td><input class="input-desc" type="text" placeholder="Ex.: Aluguel" value="'+escapeAttr(item.desc)+'"></td>' +
       '<td><select class="input-categoria">'+categoriaOptions(item.categoria)+'</select></td>' +
       '<td class="col-valor"><div class="money-input small"><span>R$</span><input class="input-valor" type="number" min="0" step="0.01" value="'+(Number(item.valor)||0)+'"></div></td>' +
@@ -686,6 +786,7 @@
       '<td><button class="btn-del" aria-label="Remover linha" title="Remover">✕</button></td>';
     tbody.appendChild(tr);
 
+    var dataInput = tr.querySelector(".input-data");
     var descInput = tr.querySelector(".input-desc");
     var catSelect = tr.querySelector(".input-categoria");
     var valorInput = tr.querySelector(".input-valor");
@@ -697,7 +798,13 @@
       if(it) it.desc = descInput.value;
     });
     descInput.addEventListener("change", function(){ store.updateItem(item.id, { desc: descInput.value }); });
-    catSelect.addEventListener("change", function(){ store.updateItem(item.id, { categoria: catSelect.value }); });
+    dataInput.addEventListener("change", function(){ store.updateItem(item.id, { data: dataInput.value || null }); });
+    catSelect.addEventListener("change", function(){
+      store.updateItem(item.id, { categoria: catSelect.value });
+      // a correção vira regra: da próxima vez que esse estabelecimento aparecer num extrato, já vem certo
+      var it = STATE.items.find(function(x){ return x.id===item.id; });
+      if(it && (it.descOriginal || it.desc)) learnMerchantRule(it.descOriginal || it.desc, catSelect.value, it.tipo);
+    });
     valorInput.addEventListener("change", function(){
       var v = parseFloat(valorInput.value);
       if(isNaN(v) || v<0) v = 0;
@@ -1002,6 +1109,7 @@
     renderTimeline();
     updateMonthNavLabel();
     updateExamplesBanner();
+    renderConsulta();
   }
 
   function syncRendaInput(){
@@ -1037,7 +1145,11 @@
     if(tbodySuperfluo) tbodySuperfluo.innerHTML = "";
     rowsById = {};
     itemsForViewedMonth()
-      .sort(function(a,b){ return (a.createdAt||0)-(b.createdAt||0); })
+      .sort(function(a,b){
+        var da = a.data || "", dbb = b.data || "";
+        if(da!==dbb) return da<dbb ? -1 : 1;
+        return (a.createdAt||0)-(b.createdAt||0);
+      })
       .forEach(function(it){ createRow(it); });
     updateDerived();
   }
@@ -1061,6 +1173,7 @@
       document.querySelectorAll(".tab-panel").forEach(function(panel){
         panel.hidden = panel.id !== "tab-"+btn.dataset.tab;
       });
+      if(btn.dataset.tab==="consultar") renderConsulta();
     });
   });
 
@@ -1132,7 +1245,7 @@
   // smallest real line-to-line gap actually observed on this page, so tightly-packed faturas
   // don't get two distinct transactions merged into one garbled row.
   function computeRowTolerance(items){
-    var ys = items.map(function(it){ return it.transform[5]; }).sort(function(a,b){ return b-a; });
+    var ys = items.map(function(it){ return it.y; }).sort(function(a,b){ return b-a; });
     var gaps = [];
     for(var i=1;i<ys.length;i++){
       var g = ys[i-1]-ys[i];
@@ -1143,71 +1256,116 @@
     return Math.min(0.6, Math.max(0.15, gaps[0]*0.25));
   }
 
+  // Ícones soltos da fatura (@ = cartão virtual, setinha = aproximação) não são texto útil e,
+  // se ficarem, grudam no começo ou no fim da linha e atrapalham a leitura.
+  function isIconItem(str){
+    var t = String(str).trim();
+    return t.length>0 && t.length<=2 && !/[\p{L}\p{N}\-−*$,]/u.test(t);
+  }
+
+  var PDF_DATE_ITEM_RE = /^\W{0,2}\d{2}\/\d{2}(\s|$)/;
+  var PDF_COL_HEADER_RE = /^(Lançamentos|DATA\b)|\(final\s*\d{4}\)/;
+
+  // Descobre as colunas de CADA página pela posição das datas dos lançamentos. Não dá pra usar uma
+  // posição fixa para o documento inteiro: na fatura Itaú, a página com o quadro "Somente para
+  // correntistas" tem as colunas deslocadas para a direita em relação às outras páginas.
+  // Devolve onde começa a coluna da direita (split) e onde começa a da esquerda (leftStart); o que
+  // estiver antes de leftStart é o quadro lateral e fica separado.
+  function detectPageColumns(p){
+    var dates = p.items.filter(function(it){ return PDF_DATE_ITEM_RE.test(it.text.trim()); })
+      .sort(function(a,b){ return a.x-b.x; });
+    var clusters = [];
+    dates.forEach(function(it){
+      var c = clusters[clusters.length-1];
+      if(c && it.x-c.maxX<=6){ c.maxX = it.x; c.n++; }
+      else clusters.push({ minX:it.x, maxX:it.x, n:1 });
+    });
+    clusters = clusters.filter(function(c){ return c.n>=2; }).sort(function(a,b){ return b.n-a.n; });
+    // cabeçalhos e datas com ícone grudado ("@ 07/04") começam um pouco antes da coluna das datas
+    var anchors = p.items.filter(function(it){ return PDF_COL_HEADER_RE.test(it.text.trim()); }).concat(dates);
+    var headers = anchors;
+    function colStart(c){
+      var start = c.minX;
+      anchors.forEach(function(h){ if(h.x<start && h.x>=c.minX-40) start = h.x; });
+      return start-2;
+    }
+    var mid = p.width*0.4, left = null, right = null;
+    if(clusters.length>=2){
+      var a = clusters[0], b = null;
+      for(var i=1;i<clusters.length;i++){ if(Math.abs(clusters[i].minX-a.minX)>p.width*0.25){ b = clusters[i]; break; } }
+      if(b){ left = a.minX<b.minX ? a : b; right = a.minX<b.minX ? b : a; }
+      else if(a.minX>mid) right = a; else left = a;
+    } else if(clusters.length===1){
+      if(clusters[0].minX>mid) right = clusters[0]; else left = clusters[0];
+    }
+    if(!right){
+      var rh = p.items.filter(function(h){ return h.x>mid && /^(lancamentos|compras parceladas|limites de cr|encargos cobrados)/.test(normalizeText(h.text).trim()); });
+      if(rh.length) right = { minX: Math.min.apply(null, rh.map(function(h){ return h.x; })) };
+    }
+    return { split: right ? colStart(right) : null, leftStart: (left && right) ? colStart(left) : null };
+  }
+
+  function groupRows(items){
+    var tol = computeRowTolerance(items);
+    var rows = [];
+    items.forEach(function(it){
+      var row = null;
+      for(var i=0;i<rows.length;i++){ if(Math.abs(rows[i].y-it.y)<tol){ row=rows[i]; break; } }
+      if(!row){ row = { y:it.y, items:[] }; rows.push(row); }
+      row.items.push(it);
+    });
+    rows.forEach(function(r){ r.items.sort(function(a,b){ return a.x-b.x; }); });
+    rows.sort(function(a,b){ return b.y-a.y; });
+    return rows;
+  }
+
   async function extractPdfRows(arrayBuffer){
     var pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    var pages = [];
-    var boundaryXs = [];
+    var allRows = [], naturalText = [];
     for(var pageNum=1; pageNum<=pdf.numPages; pageNum++){
       var page = await pdf.getPage(pageNum);
       var content = await page.getTextContent();
-      var items = content.items.filter(function(it){ return it.str && it.str.length>0; });
-      pages.push({ pageNum: pageNum, items: items });
-      items.forEach(function(it){
-        if(it.str.indexOf("Lançamentos:")===0) boundaryXs.push(it.transform[4]);
-      });
-    }
-    // The 2-column x-positions are fixed by the page template and don't change from page to
-    // page — but the "Lançamentos:" header text that reveals them is only printed once (or on
-    // some pages, not at all, e.g. a continuation page). Compute the boundary ONCE from
-    // whichever page(s) do show it, and reuse it for every page, so a continuation page
-    // without its own header still gets its left/right columns split apart instead of having
-    // both columns' text (potentially two different cardholders) glued into one row.
-    var boundary = null;
-    if(boundaryXs.length>=2){
-      var xs = boundaryXs.slice().sort(function(a,b){ return a-b; });
-      boundary = xs[xs.length-1];
-    }
-    var allRows = [];
-    pages.forEach(function(p){
-      var items = p.items;
-      if(!items.length) return;
-      var tol = computeRowTolerance(items);
-      var rows = [];
-      items.forEach(function(it){
-        var y = it.transform[5], x = it.transform[4];
-        var row = null;
-        for(var i=0;i<rows.length;i++){ if(Math.abs(rows[i].y-y)<tol){ row=rows[i]; break; } }
-        if(!row){ row = { y:y, items:[] }; rows.push(row); }
-        row.items.push({ x:x, text:it.str });
-      });
-      rows.forEach(function(r){ r.items.sort(function(a,b){ return a.x-b.x; }); });
-      rows.sort(function(a,b){ return b.y-a.y; });
-      if(boundary!=null){
-        // Itaú prints a continuous newspaper-style flow: the whole left column top-to-bottom,
-        // THEN the whole right column top-to-bottom — not interleaved row by row.
-        var leftRows = [], rightRows = [];
-        rows.forEach(function(r){
-          var left = r.items.filter(function(it){ return it.x<boundary; });
-          var right = r.items.filter(function(it){ return it.x>=boundary; });
-          if(left.length) leftRows.push({ page:p.pageNum, col:"L", y:r.y, text: joinRowItems(left) });
-          if(right.length) rightRows.push({ page:p.pageNum, col:"R", y:r.y, text: joinRowItems(right) });
-        });
-        allRows = allRows.concat(leftRows, rightRows);
-      } else {
-        rows.forEach(function(r){ allRows.push({ page:p.pageNum, col:"A", y:r.y, text: joinRowItems(r.items) }); });
+      var items = content.items
+        .filter(function(it){ return it.str && it.str.length>0 && !isIconItem(it.str); })
+        .map(function(it){ return { x:it.transform[4], y:it.transform[5], w:it.width||0, text:it.str }; });
+      if(!items.length) continue;
+      var p = { pageNum:pageNum, items:items, width: page.view[2]-page.view[0] };
+      var rows = groupRows(items);
+      // texto na ordem natural da página, pra buscas como "Vencimento: dd/mm/aaaa"
+      rows.forEach(function(r){ naturalText.push(joinRowItems(r.items)); });
+      var cols = detectPageColumns(p);
+      if(cols.split==null){
+        rows.forEach(function(r){ allRows.push({ page:pageNum, col:"A", y:r.y, text: joinRowItems(r.items) }); });
+        continue;
       }
-    });
-    return allRows;
+      // A fatura corre como jornal: coluna da esquerda inteira, depois a da direita, e na página
+      // seguinte continua pela esquerda. O quadro lateral vai separado (col "S") e é ignorado.
+      var side = [], leftRows = [], rightRows = [];
+      rows.forEach(function(r){
+        var sd = [], l = [], rt = [];
+        r.items.forEach(function(it){
+          if(it.x>=cols.split) rt.push(it);
+          else if(cols.leftStart!=null && it.x<cols.leftStart) sd.push(it);
+          else l.push(it);
+        });
+        if(sd.length) side.push({ page:pageNum, col:"S", y:r.y, text: joinRowItems(sd) });
+        if(l.length) leftRows.push({ page:pageNum, col:"L", y:r.y, text: joinRowItems(l) });
+        if(rt.length) rightRows.push({ page:pageNum, col:"R", y:r.y, text: joinRowItems(rt) });
+      });
+      allRows = allRows.concat(side, leftRows, rightRows);
+    }
+    return { rows: allRows, fullText: naturalText.join(" ") };
   }
 
+  // Junta os pedaços de texto de uma linha, pondo espaço quando há distância entre eles na página.
   function joinRowItems(items){
-    return items.map(function(it){ return it.text; }).join("").replace(/\s+/g," ").trim();
-  }
-
-  function extractVencimento(fullText){
-    var m = /Vencimento:\s*(\d{2})\/(\d{2})\/(\d{4})/.exec(fullText);
-    if(!m) return null;
-    return new Date(parseInt(m[3],10), parseInt(m[2],10)-1, 1);
+    var out = "", prevEnd = null;
+    items.forEach(function(it){
+      if(prevEnd!=null && it.x-prevEnd>1.5 && !/\s$/.test(out) && !/^\s/.test(it.text)) out += " ";
+      out += it.text;
+      prevEnd = it.x + (it.w||0);
+    });
+    return out.replace(/\s+/g," ").trim();
   }
 
   function findTitularName(fullText){
@@ -1215,67 +1373,7 @@
     return m ? m[1].trim() : "Todos os lançamentos identificados";
   }
 
-  // Sections are delimited primarily by the closing "Lançamentos no cartão (final NNNN) valor"
-  // line Itaú prints after each cardholder's transactions — that wording is far more stable across
-  // faturas than the free-text name header, which can wrap, merge with a neighboring column, or use
-  // slightly different spacing and fail to match. Name headers are only used to LABEL a section
-  // (matched by the same final-4-digits), never to decide where a section starts or ends — that way
-  // a header we fail to recognize can never cause one cardholder's rows to swallow another's.
-  function findCardholderSections(rows, fullText){
-    var headerRe = /^(.+?)\s*\(final\s*(\d{4})\)/;
-    var totalRe = /Lançamentos no cartão \(final (\d{4})\)\s+(-?[\d.]+,\d{2})/;
-    var endMarkers = /^(Lançamentos internacionais|Compras parceladas|Limites de crédito|Encargos cobrados nesta fatura|Lançamentos: produtos e serviços)/;
-    var boundsStart = -1, boundsEnd = rows.length;
-    for(var i=0;i<rows.length;i++){
-      if(boundsStart===-1 && /^Lançamentos: compras e saques/.test(rows[i].text)){ boundsStart = i; continue; }
-      if(boundsStart!==-1 && endMarkers.test(rows[i].text)){ boundsEnd = i; break; }
-    }
-    if(boundsStart===-1) return [];
-
-    var totals = [];
-    var seenTotalFinals = {};
-    for(var t=boundsStart+1; t<boundsEnd; t++){
-      var mt = totalRe.exec(rows[t].text);
-      if(mt && !seenTotalFinals[mt[1]]){
-        seenTotalFinals[mt[1]] = true;
-        totals.push({ idx:t, final:mt[1], total:mt[2] });
-      }
-    }
-
-    var headers = [];
-    var seenFinals = {};
-    for(var j=boundsStart+1; j<boundsEnd; j++){
-      var r = rows[j];
-      if(/^\d/.test(r.text)) continue;
-      if(totalRe.test(r.text)) continue; // the closing total line also fits "text (final NNNN)" — not a name header
-      var mh = headerRe.exec(r.text);
-      if(mh && !seenFinals[mh[2]]){
-        seenFinals[mh[2]] = true;
-        headers.push({ idx:j, name: mh[1].trim(), final: mh[2] });
-      }
-    }
-
-    var sections;
-    if(totals.length){
-      sections = totals.map(function(tt, k){
-        var startIdx = k===0 ? boundsStart : totals[k-1].idx;
-        var h = null;
-        for(var hIdx=0; hIdx<headers.length; hIdx++){ if(headers[hIdx].final===tt.final){ h = headers[hIdx]; break; } }
-        return { name: h ? h.name : ("Cartão final "+tt.final), final: tt.final, startIdx: startIdx, endIdx: tt.idx, total: tt.total };
-      });
-    } else if(headers.length){
-      sections = headers.map(function(h, k){
-        var endIdx = (k+1<headers.length) ? headers[k+1].idx : boundsEnd;
-        return { name:h.name, final:h.final, startIdx:h.idx, endIdx:endIdx, total:null };
-      });
-    } else {
-      var totalMatch = /Total dos lançamentos atuais\s+(-?[\d.]+,\d{2})/.exec(fullText);
-      sections = [{ name: findTitularName(fullText), final:"", startIdx: boundsStart, endIdx: boundsEnd, total: totalMatch ? totalMatch[1] : null }];
-    }
-    return sections;
-  }
-
-  var TXN_RE = /^(\d{2}\/\d{2})\s+(.+?)\s+(-)?\s*([\d.]+,\d{2})$/;
+  var TXN_RE = /^\W{0,3}?(\d{2}\/\d{2})\s+(.+?)\s+(-)?\s*([\d.]+,\d{2})\W{0,3}$/;
   var TXN_PARCELA_RE = /(\d{2})\/(\d{2})$/;
 
   // A merchant name that still contains a currency-like number or a date/parcela pattern
@@ -1285,185 +1383,815 @@
     return /\d,\d{2}(?!\d)/.test(estab) || /\d{2}\/\d{2}/.test(estab);
   }
 
-  function extractSectionItems(rows, section){
-    var items = [];
-    var last = null;
-    for(var i=section.startIdx+1; i<section.endIdx; i++){
-      var r = rows[i];
-      if(/^DATA ESTABELECIMENTO/.test(r.text) || /^Lançamentos:/.test(r.text)) continue;
-      var mt = TXN_RE.exec(r.text);
-      if(mt){
-        var estab = mt[2];
-        var pm = TXN_PARCELA_RE.exec(estab);
-        var sign = mt[3] ? -1 : 1;
-        var cleanEstab = estab.replace(TXN_PARCELA_RE,"").replace(/\s+/g," ").trim();
-        var item = {
-          date: mt[1], estab: cleanEstab,
-          valor: sign*parseValorBR(mt[4]),
-          parcelaIdx: pm ? parseInt(pm[1],10) : 1,
-          parcelaTotal: pm ? parseInt(pm[2],10) : 1,
-          categoriaRaw: null,
-          suspect: looksGarbled(cleanEstab)
-        };
-        items.push(item);
-        last = item;
-        continue;
-      }
-      if(last && !last.categoriaRaw && /^[A-ZÀ-Ú][A-ZÀ-Ú\s.]+$/.test(r.text) && r.text.length>2){
-        last.categoriaRaw = r.text.trim();
-      }
-    }
-    return items;
+  function parseItauTxn(text){
+    var mt = TXN_RE.exec(text);
+    if(!mt) return null;
+    var estab = mt[2];
+    var pm = TXN_PARCELA_RE.exec(estab);
+    var cleanEstab = estab.replace(TXN_PARCELA_RE,"").replace(/\s+/g," ").trim();
+    return {
+      date: mt[1], desc: cleanEstab,
+      amount: (mt[3] ? -1 : 1)*parseValorBR(mt[4]),
+      parcelaIdx: pm ? parseInt(pm[1],10) : 1,
+      parcelaTotal: pm ? parseInt(pm[2],10) : 1,
+      hint: null,
+      suspect: looksGarbled(cleanEstab)
+    };
   }
 
-  var FATURA_CATEGORIA_KEYWORDS = [
-    [/ifood|rappi|uber\s*eats|james\s*delivery/i, "Delivery"],
-    [/netflix|spotify|disney|hbo|amazon\s*prime|apple\.com|icloud|chatgpt|openai|youtube\s*premium|globoplay|paramount|deezer|totalpass|canva/i, "Assinaturas"],
-    [/uber(?!\s*eats)|99app|posto|combustive|estacionamento|ped[aá]gio|blacktag|tag\s*itau|conectcar|sem\s*parar|automotiv|airport/i, "Transporte"],
-    [/restaurante|hamburgu|burger|pizza|lanchonete|churrascaria|padaria/i, "Alimentação"]
-  ];
-  var FATURA_ITAU_CATEGORIA_MAP = {
-    "ALIMENTAÇÃO": "Alimentação", "TURISMO E ENTRETENIM": "Lazer", "VEÍCULOS": "Transporte",
-    "VESTUÁRIO": "Vestuário", "MORADIA": "Moradia", "DIVERSOS": "Outros", "SAÚDE": "Saúde", "EDUCAÇÃO": "Educação"
+  // A fatura Itaú é lida pelos TÍTULOS de cada bloco, na ordem de leitura (coluna esquerda, depois
+  // direita, página seguinte), e não pela posição na página — assim não importa se um total está
+  // mais em cima ou mais embaixo, nem se a lista de um titular começa numa coluna e termina em outra.
+  // O titular atual só muda quando aparece o cabeçalho de outro ou a linha de total dele.
+  var ITAU_BLOCOS = {
+    nacional: /^lancamentos:? compras e saques/,
+    internacional: /^lancamentos internacionais/,
+    servicos: /^lancamentos:? produtos e servicos/,
+    encargos: /^encargos cobrados nesta fatura/,
+    // blocos informativos: "Compras parceladas - próximas faturas" lista parcelas FUTURAS, que o
+    // app já gera sozinho a partir da parcela atual — ler isso duplicaria os gastos
+    ignorar: /^(compras parceladas|limites de credito|limite (total|disponivel|maximo)|simulacao|novo teto|credito rotativo|fique atento|pagamento minimo|parcelamento|juros maximos)/,
+    totalNacional: /^lancamentos no cartao \(final (\d{4})\)\s+(-?[\d.]+,\d{2})/,
+    totalIntl: /^total lancamentos inter\.? em r\$\s*(-?[\d.]+,\d{2})/,
+    iof: /^repasse de iof em r\$\s*(-?[\d.]+,\d{2})/,
+    totalServicos: /^lancamentos:? produtos e servicos\s+(-?[\d.]+,\d{2})/,
+    totalEncargos: /^total de encargos em r\$\s*(-?[\d.]+,\d{2})/,
+    titular: /^(.+?)\s*\(final\s*(\d{4})\)\s*$/
   };
 
-  function lookupMerchantRule(estab){
-    var rule = STATE.merchantRules[normalizeMerchantKey(estab)];
-    return rule || null;
-  }
-
-  function guessFaturaCategoria(estab, categoriaRaw){
-    var learned = lookupMerchantRule(estab);
-    if(learned && learned.categoria) return learned.categoria;
-    for(var i=0;i<FATURA_CATEGORIA_KEYWORDS.length;i++){
-      if(FATURA_CATEGORIA_KEYWORDS[i][0].test(estab)) return FATURA_CATEGORIA_KEYWORDS[i][1];
+  function parseItauFatura(rows, fullText, fileName){
+    var venc = findVencimentoDate(fullText);
+    var groups = {}, order = [];
+    function group(key, name){
+      if(!groups[key]){
+        groups[key] = { key:key, name:name, final: /^\d{4}$/.test(key) ? key : "", txs:[], total:0, hasTotal:false };
+        order.push(key);
+      } else if(name && /^Cartão final/.test(groups[key].name)) groups[key].name = name;
+      return groups[key];
     }
-    if(categoriaRaw){
-      var base = categoriaRaw.split(".")[0].trim();
-      for(var key in FATURA_ITAU_CATEGORIA_MAP){
-        if(base.indexOf(key)===0) return FATURA_ITAU_CATEGORIA_MAP[key];
+    function addTotal(g, v){ g.total = Math.round((g.total+parseValorBR(v))*100)/100; g.hasTotal = true; }
+    function encargosGroup(){ return group("_encargos", "Encargos e serviços da fatura"); }
+    var mode = null, holder = null, last = null, m;
+
+    rows.forEach(function(r){
+      if(r.col==="S") return;
+      var t = r.text, n = normalizeText(t).trim();
+      if(ITAU_BLOCOS.totalServicos.test(n)){ addTotal(encargosGroup(), ITAU_BLOCOS.totalServicos.exec(n)[1]); mode = null; return; }
+      if(ITAU_BLOCOS.nacional.test(n)){ mode = "nacional"; return; }
+      if(ITAU_BLOCOS.internacional.test(n)){ mode = "internacional"; holder = null; return; }
+      if(ITAU_BLOCOS.servicos.test(n)){ mode = "servicos"; return; }
+      if(ITAU_BLOCOS.encargos.test(n)){ mode = "encargos"; return; }
+      if((m = ITAU_BLOCOS.totalNacional.exec(n))){
+        addTotal(group(m[1], "Cartão final "+m[1]), m[2]);
+        holder = null; last = null; return;
       }
-    }
-    return "Outros";
-  }
-
-  function guessFaturaTipo(estab){
-    var learned = lookupMerchantRule(estab);
-    return (learned && learned.tipo) ? learned.tipo : "superfluo";
-  }
-
-  function createFaturaItem(it, categoria, tipo, anchorKey){
-    var total = it.parcelaTotal || 1;
-    var startIdx = it.parcelaIdx || 1;
-    var groupId = total>1 ? ("fatura-"+Date.now()+"-"+Math.random().toString(36).slice(2,7)) : null;
-    for(var k=startIdx; k<=total; k++){
-      var mesRef = addMonthsToKey(anchorKey, k-startIdx);
-      var payload = {
-        desc: it.estab, categoria: categoria, tipo: tipo, valor: it.valor, isExample:false,
-        createdAt: Date.now()+k, mesRef: mesRef,
-        parcelaTotal: total, parcelaIndex: k, parcelaGrupo: groupId
-      };
-      if(mode==="firebase"){
-        db.ref(FIREBASE_PATH+"/items").push(payload).catch(function(e){ console.error(e); });
-      } else {
-        var id = "local-"+Date.now()+"-f"+k+"-"+Math.random().toString(36).slice(2,7);
-        STATE.items.push(Object.assign({id:id}, payload));
-        saveLocal();
+      if(mode==="internacional"){
+        if((m = ITAU_BLOCOS.iof.exec(n))){
+          var iof = parseValorBR(m[1]);
+          if(holder && iof) holder.txs.push({ date:null, desc:"IOF compras internacionais", amount:iof, parcelaIdx:1, parcelaTotal:1, hint:null, suspect:false });
+          return;
+        }
+        if((m = ITAU_BLOCOS.totalIntl.exec(n))){ if(holder) addTotal(holder, m[1]); holder = null; return; }
       }
-    }
-  }
+      if(mode==="encargos"){
+        if((m = ITAU_BLOCOS.totalEncargos.exec(n))){ addTotal(encargosGroup(), m[1]); mode = null; return; }
+        if(/^(total|valor)/.test(n)) return;
+        var md = /^([^\d]*?[A-Za-zÀ-ú][^\d]*?)\s*[\d(]/.exec(t), mv = /(-?[\d.]+,\d{2})\s*$/.exec(t);
+        if(md && mv && parseValorBR(mv[1])){
+          encargosGroup().txs.push({ date:null, desc: md[1].replace(/[\s(:–-]+$/,"").trim(), amount: parseValorBR(mv[1]), parcelaIdx:1, parcelaTotal:1, hint:null, suspect:false });
+        }
+        return;
+      }
+      if(ITAU_BLOCOS.ignorar.test(n)){ mode = "ignorar"; return; }
+      if(mode!=="nacional" && mode!=="internacional" && mode!=="servicos") return;
 
-  function renderCardholderPicker(sections){
-    if(sections.length===1){
-      document.getElementById("fatura-cardholder-picker").innerHTML = "";
-      showFaturaPreview(sections[0]);
-      return;
-    }
-    var pickerEl = document.getElementById("fatura-cardholder-picker");
-    pickerEl.innerHTML = sections.map(function(s, i){
-      var sub = (s.final ? ("final "+s.final) : "") + (s.total ? (" — total "+formatMoney(parseValorBR(s.total))) : "");
-      return '<button type="button" class="cardholder-btn" data-idx="'+i+'">'+escapeXml(s.name)+'<span class="ch-sub">'+escapeXml(sub)+'</span></button>';
-    }).join("");
-    pickerEl.querySelectorAll(".cardholder-btn").forEach(function(btn){
-      btn.addEventListener("click", function(){
-        showFaturaPreview(sections[parseInt(btn.dataset.idx,10)]);
+      var mh = ITAU_BLOCOS.titular.exec(t);
+      if(mh && mode!=="servicos" && !/^\W{0,3}\d{2}\//.test(t)){
+        holder = group(mh[2], mh[1].trim()); last = null; return;
+      }
+      if(/^data\b/.test(n)) return;
+      var it = parseItauTxn(t);
+      if(it){
+        var g = mode==="servicos" ? encargosGroup() : (holder || group("_titular", findTitularName(fullText)));
+        g.txs.push(it);
+        last = mode==="nacional" ? it : null;
+        return;
+      }
+      // linha de baixo do lançamento nacional: "VEÍCULOS .SAO PAULO" / "TURISMO E ENTRETENIM.São Paulo"
+      var mc = /^([A-ZÀ-Ú][A-ZÀ-Ú\s]+?)\s*(\.|$)/.exec(t);
+      if(last && !last.hint && mc && mc[1].length>2) last.hint = mc[1].trim();
+    });
+
+    function toDoc(g){
+      var txs = g.txs.map(function(it){
+        // parcela antiga: a data impressa é a da compra original, (n-1) meses antes desta fatura
+        var ref = venc ? new Date(venc.getFullYear(), venc.getMonth()-((it.parcelaTotal>1 ? it.parcelaIdx : 1)-1), venc.getDate()) : null;
+        var d = it.date ? parseDateAtStart(it.date, ref) : null;
+        return { data: d ? d.iso : null, desc: it.desc, amount: it.amount, parcelaIdx: it.parcelaIdx, parcelaTotal: it.parcelaTotal, hint: it.hint, suspect: it.suspect };
       });
+      return { source:"Fatura Itaú · "+g.name+(g.final ? " (final "+g.final+")" : ""), fileName:fileName, kind:"cartao", outflowSign:1, txs:txs,
+               total: g.hasTotal ? g.total : null, faturaMonth: venc ? firstOfMonth(venc) : null, mixedHolders: g.key==="_titular" };
+    }
+    var docs = order.map(function(k){ return groups[k]; }).filter(function(g){ return g.txs.length; }).map(function(g){
+      return { name: g.name, sub: (g.final ? "final "+g.final : "")+(g.hasTotal ? " — total "+formatMoney(g.total) : ""), doc: toDoc(g) };
+    });
+    if(docs.length>1){
+      var all = { source:"Fatura Itaú · todos os titulares", fileName:fileName, kind:"cartao", outflowSign:1, txs:[], total:0, faturaMonth: venc ? firstOfMonth(venc) : null };
+      docs.forEach(function(d){
+        all.txs = all.txs.concat(d.doc.txs);
+        all.total = (all.total==null || d.doc.total==null) ? null : Math.round((all.total+d.doc.total)*100)/100;
+      });
+      docs.push({ name:"Todos os titulares de uma vez", sub: all.total!=null ? "total "+formatMoney(all.total) : "", doc: all });
+    }
+    return docs;
+  }
+
+  /* ---------- categorização automática ---------- */
+
+  function normalizeText(s){
+    return String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+  }
+
+  // Dicionário de estabelecimentos brasileiros, no estilo dos apps de controle de gastos (Mobills,
+  // Organizze, Minhas Economias). A primeira regra que casar vence, então as específicas (iFood,
+  // Amazon Prime, clínica veterinária) vêm antes das genéricas (restaurante, Amazon, clínica).
+  var CATEGORIA_REGRAS = [
+    ["Tarifas e juros", /\b(iof|anuidade|tarifa|juros|encargos?|mora|multa por atraso|cesta de servicos|pacote de servicos|avaliacao emergencial|seguro (do )?cartao|protecao (do )?cartao)\b/],
+    ["Delivery", /(ifood|rappi|uber ?eats|james ?delivery|ze delivery|aiqfome|99 ?food|\bdaki\b|delivery)/],
+    ["Assinaturas", /(netflix|spotify|disney ?(\+|plus)|disneyplus|\bhbo\b|prime ?video|amazon ?prime|amazonprime|apple\.com|apple com bill|itunes|icloud|google ?one|google ?storage|youtube ?premium|youtubepremium|globoplay|paramount|deezer|\bcanva\b|chatgpt|openai|anthropic|claude\.ai|microsoft ?365|office ?365|\bmsft\b|adobe|dropbox|crunchyroll|star ?plus|telecine|\bmubi\b|audible|kindle unlimited|game ?pass|playstation ?plus|\bps ?plus\b|nintendo ?online|tinder|bumble|linkedin|notion|totalpass|wellhub|gympass|assinatura)/],
+    ["Educação", /(escola|colegio|faculdade|universidade|\bcurso|udemy|alura|coursera|hotmart|eduzz|kiwify|livraria|saraiva|idiomas|\bwizard\b|\bccaa\b|\bfisk\b|\bcna\b|open english|duolingo|papelaria|kalunga|material escolar|\bsenai\b|\bsesi\b|\bsenac\b|anhanguera|\bestacio\b|\bunip\b|\bfmu\b|mackenzie|\bfgv\b|insper|descomplica|\bead\b|educacao|ensino|kumon|\bschool\b)/],
+    ["Pets", /(petz|cobasi|petlove|pet ?shop|veterinari|\bvet\b|racao|\bpet\b)/],
+    ["Saúde", /(drogaria|farmacia|drogasil|droga ?raia|\braia\b|pague menos|panvel|drogao|ultrafarma|hospital|clinica|laborator|fleury|\bdasa\b|lavoisier|delboni|\bamil\b|bradesco saude|sulamerica saude|unimed|hapvida|notre ?dame|intermedica|dentista|odonto|psicolog|fisioterap|nutricion|\bmedic|otica|oculos|smart ?fit|bluefit|bodytech|selfit|academia|crossfit|pilates)/],
+    ["Seguros", /(\bseguros?\b|porto seguro|tokio marine|allianz|mapfre|\byouse\b|\bsuhai\b)/],
+    ["Contas (água/luz/net)", /(sabesp|\benel\b|eletropaulo|cemig|\blight\b|copel|celesc|coelba|\bcpfl\b|energisa|equatorial|neoenergia|comgas|naturgy|ultragaz|liquigas|supergasbras|\bvivo\b|\bclaro\b|\btim\b|\boi (fibra|movel|s ?a)\b|net servicos|\bsky\b|algar|\bnio\b|desktop|brisanet|energia eletrica|conta de (luz|agua|gas)|saneamento|internet|telefon)/],
+    ["Impostos e taxas", /(\biptu\b|\bipva\b|\bdarf\b|\bdas\b|\bgru\b|detran|licenciamento|cartorio|receita federal|imposto|\bmulta\b|dpvat)/],
+    ["Moradia", /(aluguel|condominio|quinto ?andar|imobiliaria|\blello\b|leroy ?merlin|telhanorte|\bc ?& ?c\b|tok ?&? ?stok|\bikea\b|camicado|\betna\b|material de construcao|madeireira|eletricista|encanador|diarista|faxina|lavanderia|moveis|colchao)/],
+    ["Mercado", /(supermerc|hipermerc|\bmercado\b(?! ?(livre|pago))|mercadinho|minimercado|carrefour|pao de acucar|\bextra\b|assai|atacadao|atacadista|sam'?s club|\bdia (brasil|%)|hortifruti|\bsonda\b|\boba\b|st ?marche|\bmambo\b|\bmakro\b|tenda atacado|roldao|zaffari|nagumo|hirota|dalben|sacolao|acougue|quitanda|emporio|walmart|savegnago)/],
+    ["Viagem", /(hotel|pousada|airbnb|booking|decolar|123 ?milhas|max ?milhas|\blatam\b|voegol|\bgol linhas|\bazul (linhas|viagens)|voeazul|\bcvc\b|\bhurb\b|trivago|expedia|hostel|resort|smiles|localiza|\bmovida\b|\bunidas\b|rent a car|aeroporto|airport|clickbus|\bbuser\b|rodoviaria|passagem)/],
+    ["Transporte", /(\buber\b|\b99 ?(app|pop|taxi|tecnologia)\b|^99\b|cabify|\bposto\b|\bshell\b|ipiranga|petrobras|br mania|combustive|gasolina|etanol|estacionamento|estapar|zona azul|pedagio|sem ?parar|conectcar|\bveloe\b|taggy|move ?mais|\bmetro\b|\bcptm\b|sptrans|bilhete unico|oficina|auto ?pecas|autopecas|mecanica|lava ?rapido|borracharia|\bpneus?\b|blacktag|automotiv|\btaxi\b)/],
+    ["Alimentação", /(restaurante|\brest\b|lanchonete|lanches|padaria|panificadora|burger|hamburg|pizza|esfiha|cafeteria|\bcafe\b|starbucks|mc ?donald|\bbk\b|subway|outback|habib|spoleto|giraffas|coco bambu|madero|sushi|temaki|churrasc|pastel|doceria|sorvet|\bacai\b|cacau show|kopenhagen|\bgrill\b|cozinha|bistro|cantina|trattoria|\bfood\b|confeitaria)/],
+    ["Lazer", /(cinema|cinemark|kinoplex|cinepolis|\buci\b|ingresso|sympla|eventim|ticketmaster|bilheteria|teatro|\bshow\b|\bbar\b|boteco|\bpub\b|chopp|cervejaria|adega|tabacaria|balada|\bsteam\b|playstation|\bpsn\b|\bxbox\b|nintendo|epic games|\bparque\b|museu|zoologico|hopi hari|beto carrero|boliche|karaoke|\bclube\b)/],
+    ["Cuidados pessoais", /(salao|cabeleire|barbearia|barber|manicure|estetica|depilacao|boticario|\bnatura\b|\bavon\b|sephora|quem disse berenice|eudora|epoca cosmeticos|beleza na web|perfumaria|cosmetic)/],
+    ["Vestuário", /(renner|riachuelo|\bc ?& ?a\b|\bcea\b|\bzara\b|hering|marisa|centauro|netshoes|\bnike\b|adidas|arezzo|schutz|havaianas|youcom|\bfarm\b|\breserva\b|calcados|sapataria|dafiti|pernambucanas|\bmoda\b|roupas|confecc|decathlon)/],
+    ["Compras", /(amazon|amzn|mercado ?livre|mercadolivre|\bmeli\b|shopee|aliexpress|shein|magalu|magazine luiza|americanas|casas bahia|ponto ?frio|kabum|fast ?shop|submarino|\btemu\b|\blojas?\b|shopping)/],
+    ["Presentes e doações", /(presente|doacao|vakinha|igreja|dizimo|oferta|\bong\b|floricultura|florista)/],
+    ["Transferências", /(\bpix\b|transf|\bted\b|\bdoc\b)/]
+  ];
+
+  // Lançamentos que normalmente NÃO são gasto novo: ficam desmarcados na conferência (dá pra marcar).
+  var PAGAMENTO_FATURA_RE = /(pag(amento|to)?\.?\s*(de\s*|da\s*|do\s*)?fatura|fatura\s*(do\s*)?cart|pagamento\s*(do\s*|de\s*)?cartao|pgto\.?\s*cartao|inter pag)/;
+  var INVESTIMENTO_RE = /(aplicacao|resgate|\bcdb\b|tesouro direto|poupanca|investimento|\blci\b|\blca\b|renda fixa|porquinho|cofrinho|caixinha|\bcripto)/;
+
+  function categoriaFromText(text){
+    var n = normalizeText(text);
+    if(!n) return null;
+    for(var i=0;i<CATEGORIA_REGRAS.length;i++){
+      if(CATEGORIA_REGRAS[i][1].test(n)) return CATEGORIA_REGRAS[i][0];
+    }
+    return null;
+  }
+
+  // Categoria que o próprio banco manda (coluna "Categoria" do CSV, rótulo da fatura Itaú etc.)
+  var HINT_REGRAS = [
+    [/restaura|aliment|lanchon|padaria/, "Alimentação"], [/supermerc|mercado/, "Mercado"],
+    [/turismo|entretenim|lazer|diversao/, "Lazer"], [/viage|hotel|aere|hosped/, "Viagem"],
+    [/veicul|transporte|combust|posto/, "Transporte"], [/saude|farmac|drogar|hospital/, "Saúde"],
+    [/educa/, "Educação"], [/vestu|roupa/, "Vestuário"], [/moradia|casa|constru|moveis/, "Moradia"],
+    [/beleza|cosmet/, "Cuidados pessoais"], [/\bpet/, "Pets"], [/assinatur|streaming/, "Assinaturas"],
+    [/departament|eletro|compras|varejo|loja/, "Compras"], [/seguro/, "Seguros"]
+  ];
+  function categoriaFromHint(hint){
+    var n = normalizeText(hint);
+    if(!n) return null;
+    for(var i=0;i<HINT_REGRAS.length;i++){ if(HINT_REGRAS[i][0].test(n)) return HINT_REGRAS[i][1]; }
+    return null;
+  }
+
+  function lookupMerchantRule(estab){
+    return STATE.merchantRules[normalizeMerchantKey(estab)] || STATE.merchantRules[merchantLooseKey(estab)] || null;
+  }
+
+  function guessCategoria(desc, hint){
+    var learned = lookupMerchantRule(desc);
+    if(learned && learned.categoria) return learned.categoria;
+    return categoriaFromText(desc) || categoriaFromHint(hint) || "Outros";
+  }
+
+  function guessTipo(desc, categoria){
+    var learned = lookupMerchantRule(desc);
+    if(learned && learned.tipo) return learned.tipo;
+    return CATEGORIA_TIPO_PADRAO[categoria] || "superfluo";
+  }
+
+  /* ---------- importação: leitura de datas, valores e parcelas ---------- */
+
+  function pad2(n){ return String(n).padStart(2,"0"); }
+  function isoDate(y, m, d){
+    y = parseInt(y,10); m = parseInt(m,10); d = parseInt(d,10);
+    if(y<100) y += 2000;
+    if(!(m>=1 && m<=12 && d>=1 && d<=31 && y>=1990 && y<=2100)) return null;
+    return y+"-"+pad2(m)+"-"+pad2(d);
+  }
+  function isoToDate(iso){ var p = iso.split("-"); return new Date(+p[0], +p[1]-1, +p[2]); }
+  function formatIsoBR(iso){ if(!iso) return "—"; var p = iso.split("-"); return p[2]+"/"+p[1]+"/"+p[0]; }
+
+  // Datas sem ano (ex.: "05/08" na fatura) usam o ano da data de referência (vencimento ou
+  // a data mais recente do documento); se ficarem depois dela, são do ano anterior.
+  function inferYear(m, d, ref){
+    var base = ref || new Date();
+    var y = base.getFullYear();
+    var limit = new Date(base.getFullYear(), base.getMonth(), base.getDate()+45);
+    if(new Date(y, m-1, d) > limit) y--;
+    return y;
+  }
+
+  var MES_NUM = { jan:1, fev:2, mar:3, abr:4, mai:5, jun:6, jul:7, ago:8, set:9, out:10, nov:11, dez:12 };
+  var MES_NOME_RE = "(jan(?:eiro)?|fev(?:ereiro)?|mar(?:ço|co)?|abr(?:il)?|mai(?:o)?|jun(?:ho)?|jul(?:ho)?|ago(?:sto)?|set(?:embro)?|out(?:ubro)?|nov(?:embro)?|dez(?:embro)?)\\.?(?![a-zà-ú])";
+  var DATE_RES = [
+    { re: /^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4}|\d{2})(?!\d)/, fn: function(m){ return isoDate(m[3], m[2], m[1]); } },
+    { re: /^(\d{4})-(\d{2})-(\d{2})/, fn: function(m){ return isoDate(m[1], m[2], m[3]); } },
+    { re: new RegExp("^(\\d{1,2})\\s*(?:de\\s+|\\/\\s*)?"+MES_NOME_RE+"\\s*(?:de\\s+|\\/\\s*)?(\\d{4})?(?!\\d)", "i"), fn: function(m, ref){
+        var mes = MES_NUM[normalizeText(m[2]).slice(0,3)];
+        return isoDate(m[3] || inferYear(mes, +m[1], ref), mes, m[1]);
+      } },
+    { re: /^(\d{2})\/(\d{2})(?![\/\d])/, fn: function(m, ref){ return isoDate(inferYear(+m[2], +m[1], ref), m[2], m[1]); } }
+  ];
+
+  function parseDateAtStart(text, ref){
+    var t = String(text||"").replace(/^\s+/,"");
+    for(var i=0;i<DATE_RES.length;i++){
+      var m = DATE_RES[i].re.exec(t);
+      if(m){
+        var iso = DATE_RES[i].fn(m, ref);
+        if(iso) return { iso: iso, rest: t.slice(m[0].length).trim() };
+      }
+    }
+    return null;
+  }
+
+  function parseDateCell(v, ref){
+    if(v instanceof Date && !isNaN(v)){
+      var d = new Date(v.getTime()+12*3600e3); // planilhas às vezes trazem a data em UTC
+      return isoDate(d.getFullYear(), d.getMonth()+1, d.getDate());
+    }
+    var p = parseDateAtStart(v, ref);
+    if(!p) return null;
+    return (!p.rest || /^(\d{1,2}:\d{2}|t\d)/i.test(p.rest)) ? p.iso : null;
+  }
+
+  // Aceita "R$ 1.234,56", "-1.234,56", "1234.56" (padrão americano), "(45,90)", "45,90 D", "45,90-".
+  function parseAmount(v){
+    if(typeof v==="number") return v;
+    var s = String(v==null?"":v).trim();
+    if(!s || !/\d/.test(s)) return NaN;
+    var neg = /^[\s(]*[-−]/.test(s) || /R\$\s*[-−]/.test(s) || /[-−]\s*$/.test(s) || /^\(.*\)$/.test(s) || /\sD$/i.test(s);
+    var digits = s.replace(/[^\d.,]/g,"");
+    var lastComma = digits.lastIndexOf(","), lastDot = digits.lastIndexOf(".");
+    if(lastComma>-1 && lastDot>-1){
+      digits = lastComma>lastDot ? digits.replace(/\./g,"").replace(",",".") : digits.replace(/,/g,"");
+    } else if(lastComma>-1){
+      digits = digits.split(",").length>2 ? digits.replace(/,/g,"") : digits.replace(",",".");
+    } else if(lastDot>-1 && /^\d{1,3}(\.\d{3})+$/.test(digits)){
+      digits = digits.replace(/\./g,"");
+    }
+    var n = parseFloat(digits);
+    if(isNaN(n)) return NaN;
+    return neg ? -n : n;
+  }
+
+  // Valores monetários dentro de uma linha de PDF (vírgula decimal obrigatória, pra não confundir com datas).
+  var MONEY_RE = /([-−+]\s*)?(R\$\s*)?([-−]\s*)?(\d{1,3}(?:\.\d{3})+|\d+),(\d{2})(?![\d%])(\s?-(?=\s|$)|\s[DC](?=\s|$))?/g;
+  function findAmounts(text){
+    var out = [], m;
+    MONEY_RE.lastIndex = 0;
+    while((m = MONEY_RE.exec(text))){
+      var before = text.charAt(m.index-1);
+      if(before && /[\d\/]/.test(before)) continue;
+      out.push({ index: m.index, value: parseAmount(m[0]) });
+    }
+    return out;
+  }
+
+  var PARCELA_RES = [
+    /\(?\s*parcela\s*(\d{1,2})\s*(?:de|\/)\s*(\d{1,2})\s*\)?/i,
+    /\bparc\.?\s*(\d{1,2})\s*(?:de|\/)\s*(\d{1,2})\b/i,
+    /(?:^|\s)(\d{1,2})\s*\/\s*(\d{1,2})\s*$/
+  ];
+  function extractParcela(desc){
+    var s = String(desc||"");
+    for(var i=0;i<PARCELA_RES.length;i++){
+      var m = PARCELA_RES[i].exec(s);
+      if(m){
+        var idx = parseInt(m[1],10), total = parseInt(m[2],10);
+        if(total>=2 && total<=72 && idx>=1 && idx<=total){
+          return { desc: (s.slice(0,m.index)+" "+s.slice(m.index+m[0].length)).replace(/\s+/g," ").trim(), idx: idx, total: total };
+        }
+      }
+    }
+    return { desc: s.trim(), idx: 1, total: 1 };
+  }
+
+  function cleanDesc(s){
+    return String(s||"")
+      .replace(/["“”]/g,"")
+      .replace(/\bcp\s*:\s*\d+\s*-?\s*/ig,"")
+      .replace(/^compra no (d[eé]bito|cr[eé]dito)\s*:?\s*/i,"")
+      .replace(/\bno estabelecimento\s*/ig,"")
+      .replace(/\s*:\s*/g," - ")
+      .replace(/\s+/g," ")
+      .replace(/^[\s\-–|]+|[\s\-–|]+$/g,"")
+      .trim();
+  }
+
+  function makeTx(data, desc, amount, hint, parcelaText){
+    var p = extractParcela(desc);
+    if(p.total<2 && parcelaText){
+      var p2 = extractParcela(parcelaText);
+      if(p2.total>1){ p.idx = p2.idx; p.total = p2.total; }
+    }
+    return { data: data, desc: cleanDesc(p.desc) || "(sem descrição)", amount: amount, parcelaIdx: p.idx, parcelaTotal: p.total, hint: hint || null, suspect: false };
+  }
+
+  /* ---------- importação: leitores por formato ---------- */
+
+  function decodeText(buf){
+    var text;
+    try{ text = new TextDecoder("utf-8", { fatal:true }).decode(buf); }
+    catch(e){ text = new TextDecoder("windows-1252").decode(buf); }
+    return text.replace(/^﻿/,"");
+  }
+
+  function findVencimentoDate(fullText){
+    var m = /vencimento[^\d]{0,30}(\d{2})\/(\d{2})\/(\d{4})/i.exec(fullText);
+    return m ? new Date(parseInt(m[3],10), parseInt(m[2],10)-1, parseInt(m[1],10)) : null;
+  }
+
+  function latestFullDate(fullText){
+    var re = /(\d{2})\/(\d{2})\/(\d{4})/g, m, best = null;
+    while((m = re.exec(fullText))){
+      var iso = isoDate(m[3], m[2], m[1]);
+      if(iso && (!best || iso>best)) best = iso;
+    }
+    return best ? isoToDate(best) : null;
+  }
+
+  /* OFX: formato padrão de exportação dos bancos brasileiros (Itaú, Inter, Bradesco, Nubank...). */
+  function parseOfx(text, fileName){
+    var isCard = /<CCSTMTRS>|<CREDITCARDMSGSRSV1>/i.test(text);
+    var txs = text.split(/<STMTTRN>/i).slice(1).map(function(block){
+      block = block.split(/<\/STMTTRN>/i)[0];
+      function tag(n){
+        var m = new RegExp("<"+n+">([^<\\r\\n]*)","i").exec(block);
+        return m ? m[1].replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").trim() : "";
+      }
+      var dt = tag("DTPOSTED");
+      var data = dt.length>=8 ? isoDate(dt.slice(0,4), dt.slice(4,6), dt.slice(6,8)) : null;
+      var memo = tag("MEMO"), name = tag("NAME");
+      var desc = memo || name;
+      if(memo && name && memo.indexOf(name)===-1 && name.indexOf(memo)===-1) desc = name+" - "+memo;
+      return makeTx(data, desc, parseAmount(tag("TRNAMT")), null, null);
+    }).filter(function(t){ return !isNaN(t.amount) && t.amount!==0; });
+    return { source:"OFX", fileName:fileName, kind: isCard ? "cartao" : "conta", outflowSign:-1, txs:txs, total:null, faturaMonth:null };
+  }
+
+  /* CSV / Excel: acha a linha de cabeçalho e descobre sozinho quais colunas são data, descrição e valor. */
+  function splitCsvLine(line, sep){
+    var out = [], cur = "", q = false;
+    for(var i=0;i<line.length;i++){
+      var c = line.charAt(i);
+      if(q){
+        if(c==='"'){ if(line.charAt(i+1)==='"'){ cur+='"'; i++; } else q = false; }
+        else cur += c;
+      } else if(c==='"') q = true;
+      else if(c===sep){ out.push(cur); cur = ""; }
+      else cur += c;
+    }
+    out.push(cur);
+    return out.map(function(s){ return s.trim(); });
+  }
+
+  function detectSeparator(lines){
+    var sample = lines.filter(function(l){ return l.trim(); }).slice(0,25);
+    var cands = [";","\t",",","|"];
+    for(var i=0;i<cands.length;i++){
+      var withSep = sample.filter(function(l){ return splitCsvLine(l, cands[i]).length>=3; }).length;
+      if(sample.length && withSep/sample.length>=0.6) return cands[i];
+    }
+    return ",";
+  }
+
+  function mapHeader(cells){
+    var map = { date:-1, valor:-1, credito:-1, debito:-1, desc:[], categoria:-1, parcela:-1 };
+    cells.forEach(function(c, i){
+      var n = normalizeText(c).trim();
+      if(!n) return;
+      if(map.date===-1 && /^(data|date|dt)\b/.test(n)) { map.date = i; return; }
+      if(/saldo|balance/.test(n)) return;
+      if(map.valor===-1 && /^(valor|amount|value|vlr|quantia|montante)/.test(n) && !/us\$|usd|dolar/.test(n)) { map.valor = i; return; }
+      if(map.credito===-1 && /^(credito|entradas?)\b/.test(n)) { map.credito = i; return; }
+      if(map.debito===-1 && /^(debito|saidas?)\b/.test(n)) { map.debito = i; return; }
+      if(map.categoria===-1 && /categoria|category/.test(n)) { map.categoria = i; return; }
+      if(map.parcela===-1 && /parcela|installment|^tipo/.test(n)) { map.parcela = i; return; }
+      if(/historico|descri|lancamento|estabelecimento|^title$|titulo|memo|^nome|detalhe|favorecido|beneficiario|^local/.test(n)) map.desc.push(i);
+    });
+    var hasValor = map.valor>-1 || (map.credito>-1 && map.debito>-1);
+    return (map.date>-1 && hasValor && map.desc.length) ? map : null;
+  }
+
+  function parseTableRows(rows, fileName, source){
+    rows = rows.filter(function(r){ return r && r.some(function(c){ return String(c==null?"":c).trim(); }); });
+    var hIdx = -1, map = null;
+    for(var i=0;i<Math.min(rows.length,40);i++){
+      map = mapHeader(rows[i].map(function(c){ return String(c==null?"":c); }));
+      if(map){ hIdx = i; break; }
+    }
+    var txs = [];
+    function cell(r, idx){ var v = idx>-1 ? r[idx] : ""; return v==null ? "" : v; }
+    if(map){
+      rows.slice(hIdx+1).forEach(function(r){
+        var data = parseDateCell(cell(r, map.date));
+        if(!data) return;
+        var amount;
+        if(map.valor>-1) amount = parseAmount(cell(r, map.valor));
+        else {
+          var cr = parseAmount(cell(r, map.credito)), db = parseAmount(cell(r, map.debito));
+          amount = (!isNaN(cr) && cr!==0) ? Math.abs(cr) : (!isNaN(db) ? -Math.abs(db) : NaN);
+        }
+        if(isNaN(amount) || amount===0) return;
+        var desc = map.desc.map(function(c){ return String(cell(r,c)).trim(); }).filter(Boolean).join(" - ");
+        txs.push(makeTx(data, desc, amount, map.categoria>-1 ? String(cell(r,map.categoria)) : null, map.parcela>-1 ? String(cell(r,map.parcela)) : null));
+      });
+    } else {
+      // Sem cabeçalho reconhecível: em cada linha, 1ª célula com data, 1ª célula com valor, resto é descrição.
+      rows.forEach(function(r){
+        var data = null, amount = NaN, descParts = [];
+        r.forEach(function(c){
+          var s = String(c==null?"":c).trim();
+          if(!s) return;
+          if(!data){ var d = parseDateCell(c); if(d){ data = d; return; } }
+          if(isNaN(amount) && (typeof c==="number" || /^[-−(]?\s*(R\$)?\s*[-−]?\s*[\d.,]+\)?\s*[DC-]?$/i.test(s))){ amount = parseAmount(c); return; }
+          if(isNaN(amount)) descParts.push(s);
+        });
+        if(data && !isNaN(amount) && amount!==0 && descParts.length) txs.push(makeTx(data, descParts.join(" - "), amount, null, null));
+      });
+    }
+    var blob = normalizeText(fileName+" "+rows.slice(0, hIdx>-1 ? hIdx+1 : 5).map(function(r){ return r.join(" "); }).join(" "));
+    var isCard = /fatura|cartao|credit|card/.test(blob);
+    return { source: source, fileName:fileName, kind: isCard ? "cartao" : "conta", outflowSign:null, txs:txs, total:null, faturaMonth:null };
+  }
+
+  function parseCsvDoc(text, fileName){
+    var lines = text.split(/\r?\n/);
+    var sep = detectSeparator(lines);
+    return parseTableRows(lines.map(function(l){ return splitCsvLine(l, sep); }), fileName, "CSV");
+  }
+
+  function loadScriptOnce(src){
+    return new Promise(function(resolve, reject){
+      if(document.querySelector('script[src="'+src+'"]')){ resolve(); return; }
+      var s = document.createElement("script");
+      s.src = src; s.onload = resolve; s.onerror = function(){ reject(new Error("Falha ao carregar "+src)); };
+      document.head.appendChild(s);
     });
   }
 
-  function showFaturaPreview(section){
-    var items = extractSectionItems(window.__faturaRows, section);
-    var mesBase = firstOfMonth(window.__faturaVencimento || new Date());
+  function readExcelDoc(buf, fileName){
+    return loadScriptOnce("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js").then(function(){
+      var wb = XLSX.read(new Uint8Array(buf), { type:"array", cellDates:true });
+      var best = null;
+      wb.SheetNames.forEach(function(n){
+        var rows = XLSX.utils.sheet_to_json(wb.Sheets[n], { header:1, raw:true, defval:"" });
+        var doc = parseTableRows(rows, fileName, "Excel");
+        if(!best || doc.txs.length>best.txs.length) best = doc;
+      });
+      return best;
+    });
+  }
+
+  /* PDF genérico (extrato Inter, Itaú, fatura Inter e outros): cada linha com data + valor vira um
+     lançamento. Linhas que só têm a data (cabeçalho do dia, como no extrato do Inter) valem para as
+     linhas seguintes. */
+  var PDF_IGNORE_RE = /^(saldo|total|subtotal|limite|vencimento|valor (total|minimo|da fatura)|pagamento minimo|fatura anterior|encargos|juros do rotativo|taxa de juros|cet\b|periodo|data\b|descricao|lancamentos?\b|resumo|credito rotativo|parcelamento de fatura|proxima fatura|demais faturas|compras parceladas)/;
+
+  function parseGenericPdf(rows, fullText, fileName){
+    var venc = findVencimentoDate(fullText);
+    var ref = venc || latestFullDate(fullText) || new Date();
+    var nText = normalizeText(fullText);
+    var isCard = /fatura/.test(nText) && /(vencimento|cartao)/.test(nText) && !/saldo do dia/.test(nText);
+    var current = null, txs = [];
+    rows.forEach(function(r){
+      var text = r.text;
+      var d = parseDateAtStart(text, ref);
+      var rest = text;
+      if(d){ current = d.iso; rest = d.rest; }
+      if(!current) return;
+      var n = normalizeText(rest);
+      if(/saldo do dia|saldo anterior|saldo final/.test(n) || PDF_IGNORE_RE.test(n)) return;
+      var amounts = findAmounts(rest);
+      if(!amounts.length || !amounts[0].value) return;
+      var desc = rest.slice(0, amounts[0].index).trim();
+      if(!desc || !/[a-zà-ú]/i.test(desc)) return;
+      if(PDF_IGNORE_RE.test(normalizeText(desc))) return;
+      var tx = makeTx(current, desc, amounts[0].value, null, null);
+      tx.suspect = looksGarbled(tx.desc);
+      txs.push(tx);
+    });
+    return { source:"PDF", fileName:fileName, kind: isCard ? "cartao" : "conta", outflowSign:null, txs:txs, total:null,
+             faturaMonth: (isCard && venc) ? firstOfMonth(venc) : null };
+  }
+
+  function readPdfDoc(buf, fileName){
+    if(typeof pdfjsLib === "undefined") return Promise.reject(new Error("pdfjs indisponível"));
+    return extractPdfRows(buf).then(function(res){
+      var rows = res.rows, fullText = res.fullText;
+      if(/ita[uú]/i.test(fullText)){
+        var docs = parseItauFatura(rows, fullText, fileName);
+        if(docs.length) return { sections: docs };
+      }
+      return parseGenericPdf(rows, fullText, fileName);
+    });
+  }
+
+  /* ---------- importação: conferência e gravação ---------- */
+
+  var IMPORT = null;
+  var importSeq = 0;
+
+  function dedupeDesc(s){ return normalizeText(s).replace(/[^a-z0-9]+/g,""); }
+
+  function buildDedupeIndex(){
+    var idx = { parcela:{}, exact:{}, semData:{} };
+    STATE.items.forEach(function(it){
+      var d = dedupeDesc(it.descOriginal || it.desc), v = (Number(it.valor)||0).toFixed(2);
+      if((Number(it.parcelaTotal)||1)>1) idx.parcela[d+"|"+v+"|"+it.parcelaIndex+"/"+it.parcelaTotal+"|"+it.mesRef] = true;
+      else if(it.data) idx.exact[it.data+"|"+d+"|"+v] = true;
+      else idx.semData[d+"|"+v+"|"+it.mesRef] = true;
+    });
+    return idx;
+  }
+
+  function isDuplicate(index, tx, valor, mesKey){
+    var d = dedupeDesc(tx.desc), v = valor.toFixed(2);
+    if(tx.parcelaTotal>1) return !!index.parcela[d+"|"+v+"|"+tx.parcelaIdx+"/"+tx.parcelaTotal+"|"+mesKey];
+    if(tx.data && index.exact[tx.data+"|"+d+"|"+v]) return true;
+    return !!index.semData[d+"|"+v+"|"+mesKey];
+  }
+
+  function estimateFaturaMonthKey(txs){
+    var latest = null;
+    txs.forEach(function(t){ if(t.data && t.parcelaTotal<2 && (!latest || t.data>latest)) latest = t.data; });
+    return latest ? addMonthsToKey(latest.slice(0,7), 1) : viewedMonthKey();
+  }
+
+  function startImport(doc){
+    var pos = 0, neg = 0;
+    doc.txs.forEach(function(t){ if(t.amount>0) pos++; else if(t.amount<0) neg++; });
+    var faturaKey = doc.faturaMonth ? mesKeyOf(doc.faturaMonth) : null;
+    IMPORT = {
+      doc: doc,
+      outflowSign: doc.outflowSign || (neg>pos ? -1 : 1),
+      kind: doc.kind,
+      aloc: doc.kind==="cartao" ? "mes" : "data",
+      mesKey: faturaKey || (doc.kind==="cartao" ? estimateFaturaMonthKey(doc.txs) : viewedMonthKey()),
+      mesEstimado: !faturaKey && doc.kind==="cartao",
+      rowState: doc.txs.map(function(){ return {}; })
+    };
+    renderImportPreview();
+  }
+
+  function computeImportRows(){
+    var index = buildDedupeIndex();
+    return IMPORT.doc.txs.map(function(tx, i){
+      var st = IMPORT.rowState[i];
+      var isCredit = Math.sign(tx.amount)!==IMPORT.outflowSign;
+      var valor = Math.round(Math.abs(tx.amount)*100)/100 * (isCredit ? -1 : 1);
+      var mesKey = (IMPORT.aloc==="data" && tx.data) ? tx.data.slice(0,7) : IMPORT.mesKey;
+      var n = normalizeText(tx.desc);
+      var reasons = [], info = [];
+      if(isCredit){
+        if(IMPORT.kind==="cartao" && !/pagamento|pagto|pgto/.test(n)) info.push("estorno (abate do total)");
+        else reasons.push("entrada / estorno");
+      }
+      if(PAGAMENTO_FATURA_RE.test(n)) reasons.push("pagamento de fatura");
+      if(INVESTIMENTO_RE.test(n)) reasons.push("investimento");
+      if(isDuplicate(index, tx, valor, mesKey)) reasons.push("já lançado");
+      if(tx.suspect) reasons.push("conferir descrição");
+      var categoria = st.categoria || guessCategoria(tx.desc, tx.hint);
+      return {
+        tx: tx, i: i, valor: valor, mesKey: mesKey, reasons: reasons, info: info,
+        checked: st.checked!=null ? st.checked : reasons.length===0,
+        desc: st.desc!=null ? st.desc : tx.desc,
+        categoria: categoria,
+        tipo: st.tipo || guessTipo(tx.desc, categoria),
+        learned: !!lookupMerchantRule(tx.desc)
+      };
+    });
+  }
+
+  function renderImportPreview(){
     var previewEl = document.getElementById("fatura-preview");
-    var suspectCount = items.filter(function(it){ return it.suspect; }).length;
-    var rowsHtml = items.map(function(it, i){
-      var categoria = guessFaturaCategoria(it.estab, it.categoriaRaw);
-      var tipo = guessFaturaTipo(it.estab);
-      var learned = lookupMerchantRule(it.estab);
-      var parcelaLabel = it.parcelaTotal>1 ? (it.parcelaIdx+"/"+it.parcelaTotal) : "—";
-      var suspectTag = it.suspect ? ' <span class="ch-sub" style="color:var(--superfluo)" title="A descrição ainda tem um número parecido com valor ou data no meio — pode ter se misturado com outro lançamento. Confira antes de marcar.">⚠ conferir</span>' : "";
-      return '<tr data-i="'+i+'">'+
-        '<td class="col-check"><input type="checkbox" class="fp-check"'+(it.suspect?"":" checked")+'></td>'+
-        '<td>'+escapeXml(it.estab)+suspectTag+(learned?' <span class="ch-sub" title="Sugestão baseada em uma correção sua anterior">(aprendido)</span>':'')+'</td>'+
-        '<td><select class="fp-categoria">'+categoriaOptions(categoria)+'</select></td>'+
+    if(!IMPORT){ previewEl.innerHTML = ""; return; }
+    var doc = IMPORT.doc;
+    var rows = computeImportRows();
+    var rowsHtml = rows.map(function(r){
+      var tx = r.tx;
+      var tags = r.reasons.map(function(x){
+        var warn = x==="conferir descrição" || x==="já lançado";
+        return '<span class="imp-tag'+(warn?" warn":"")+'">'+escapeXml(x)+'</span>';
+      }).join("");
+      r.info.forEach(function(x){ tags += '<span class="imp-tag">'+escapeXml(x)+'</span>'; });
+      if(r.learned) tags += '<span class="imp-tag" title="Categoria/tipo vindos de uma correção sua anterior">aprendido</span>';
+      var parcela = tx.parcelaTotal>1 ? (tx.parcelaIdx+"/"+tx.parcelaTotal) : "—";
+      if(tx.parcelaTotal>1 && tx.parcelaIdx<tx.parcelaTotal) parcela += '<span class="ch-sub">+'+(tx.parcelaTotal-tx.parcelaIdx)+' mês(es)</span>';
+      return '<tr data-i="'+r.i+'" class="'+(r.checked?"":"is-off")+'">'+
+        '<td class="col-check"><input type="checkbox" class="fp-check"'+(r.checked?" checked":"")+'></td>'+
+        '<td class="col-fp-data">'+escapeXml(formatIsoBR(tx.data))+'</td>'+
+        '<td><input class="fp-desc" type="text" value="'+escapeAttr(r.desc)+'">'+(tags?'<div class="imp-tags">'+tags+'</div>':'')+'</td>'+
+        '<td><select class="fp-categoria">'+categoriaOptions(r.categoria)+'</select></td>'+
         '<td><select class="fp-tipo">'+
-          '<option value="superfluo"'+(tipo==="superfluo"?" selected":"")+'>Supérfluo</option>'+
-          '<option value="fixo"'+(tipo==="fixo"?" selected":"")+'>Fixo</option>'+
+          '<option value="fixo"'+(r.tipo==="fixo"?" selected":"")+'>Fixo</option>'+
+          '<option value="superfluo"'+(r.tipo==="superfluo"?" selected":"")+'>Supérfluo</option>'+
         '</select></td>'+
-        '<td class="col-fp-valor">'+formatMoney(it.valor)+'</td>'+
-        '<td>'+parcelaLabel+'</td>'+
+        '<td class="col-fp-valor'+(r.valor<0?" is-credit":"")+'">'+formatMoney(r.valor)+'</td>'+
+        '<td class="col-fp-parcela">'+parcela+'</td>'+
       '</tr>';
     }).join("");
-    var mixedWarning = section.final ? "" :
-      '<div class="fatura-check-row mismatch">⚠ Não identifiquei o titular de cada lançamento — esta lista pode incluir gastos de mais de uma pessoa. Desmarque o que não for de quem você quer importar antes de confirmar.</div>';
-    var suspectWarning = suspectCount>0 ?
-      '<div class="fatura-check-row mismatch">⚠ '+suspectCount+' descrição(ões) parecem ter se misturado com outro lançamento (ficaram desmarcadas) — dá pra ver o valor certo na fatura e corrigir a descrição, ou deixar de fora mesmo.</div>' : "";
+
+    var warnings = "";
+    if(doc.mixedHolders) warnings += '<div class="fatura-check-row mismatch">⚠ Não identifiquei o titular de cada lançamento — esta lista pode incluir gastos de mais de uma pessoa. Desmarque o que não for de quem você quer importar.</div>';
+    var suspect = rows.filter(function(r){ return r.tx.suspect; }).length;
+    if(suspect) warnings += '<div class="fatura-check-row mismatch">⚠ '+suspect+' descrição(ões) parecem ter se misturado com outro lançamento (ficaram desmarcadas). Corrija a descrição ou deixe de fora.</div>';
+    var dups = rows.filter(function(r){ return r.reasons.indexOf("já lançado")>-1; }).length;
+    if(dups) warnings += '<div class="fatura-check-row">'+dups+' lançamento(s) já existem no sistema (importação anterior ou parcela gerada antes) e ficaram desmarcados para não duplicar.</div>';
+
+    var mesInputVal = IMPORT.mesKey;
     previewEl.innerHTML =
-      mixedWarning + suspectWarning +
+      '<div class="imp-options">'+
+        '<label>Tipo de arquivo <select id="imp-kind">'+
+          '<option value="conta"'+(IMPORT.kind==="conta"?" selected":"")+'>Extrato de conta</option>'+
+          '<option value="cartao"'+(IMPORT.kind==="cartao"?" selected":"")+'>Fatura de cartão</option>'+
+        '</select></label>'+
+        '<label>Lançar cada gasto no <select id="imp-aloc">'+
+          '<option value="data"'+(IMPORT.aloc==="data"?" selected":"")+'>mês da data da compra</option>'+
+          '<option value="mes"'+(IMPORT.aloc==="mes"?" selected":"")+'>mês da fatura →</option>'+
+        '</select></label>'+
+        '<input type="month" id="imp-mes" value="'+escapeAttr(mesInputVal)+'"'+(IMPORT.aloc==="mes"?"":" disabled")+'>'+
+        (IMPORT.mesEstimado && IMPORT.aloc==="mes" ? '<span class="ch-sub">mês estimado — confira o vencimento</span>' : '')+
+        '<button type="button" class="btn-ghost" id="imp-invert" title="Use se os gastos apareceram como entrada e vice-versa">⇅ Inverter entradas/saídas</button>'+
+      '</div>'+
+      '<p class="empty-note">'+escapeXml(doc.source)+' · '+escapeXml(doc.fileName||"")+' · '+rows.length+' lançamento(s) encontrados. Parcelas ("3/10") já são distribuídas automaticamente nos meses seguintes.</p>'+
+      warnings+
       '<div class="table-wrap"><table class="fatura-preview-table">'+
-      '<thead><tr><th></th><th>Descrição</th><th>Categoria</th><th>Tipo</th><th>Valor</th><th>Parcela</th></tr></thead>'+
+      '<thead><tr><th class="col-check"><input type="checkbox" id="fp-check-all" title="Marcar/desmarcar todos"></th><th>Data</th><th>Descrição</th><th>Categoria</th><th>Tipo</th><th class="col-fp-valor">Valor</th><th>Parcela</th></tr></thead>'+
       '<tbody>'+rowsHtml+'</tbody></table></div>'+
       '<div class="fatura-check-row" id="fatura-check-row"></div>'+
-      '<div class="import-controls"><button id="fatura-confirm-btn" class="btn-add" type="button">Importar itens selecionados em '+escapeXml(mesLabelOf(mesBase))+'</button></div>';
+      '<div class="import-controls">'+
+        '<button id="fatura-confirm-btn" class="btn-add" type="button">Importar</button>'+
+        '<button id="fatura-cancel-btn" class="btn-ghost" type="button">Cancelar</button>'+
+      '</div>';
 
-    function recomputeCheck(){
-      var total = 0, count = 0;
-      previewEl.querySelectorAll("tbody tr").forEach(function(tr){
-        if(tr.querySelector(".fp-check").checked){
-          total += items[parseInt(tr.dataset.i,10)].valor;
-          count++;
-        }
-      });
+    function recompute(){
+      var total = 0, count = 0, meses = {};
+      rows.forEach(function(r){ if(r.checked){ total += r.valor; count++; meses[r.mesKey] = true; } });
       var checkEl = document.getElementById("fatura-check-row");
-      var stated = section.total ? parseValorBR(section.total) : null;
+      var stated = doc.total;
+      var txt = "Soma dos "+count+" item(ns) selecionado(s): "+formatMoney(total);
       if(stated!=null){
         var match = Math.abs(total-stated) < 0.01;
         checkEl.className = "fatura-check-row " + (match ? "match" : "mismatch");
-        checkEl.innerHTML = (match ? "✓ " : "⚠ ") + "Soma dos "+count+" item(ns) selecionado(s): "+formatMoney(total)+" — total informado pela fatura: "+formatMoney(stated);
+        checkEl.textContent = (match ? "✓ " : "⚠ ") + txt + " — total informado pela fatura: "+formatMoney(stated);
       } else {
         checkEl.className = "fatura-check-row";
-        checkEl.innerHTML = "Soma dos "+count+" item(ns) selecionado(s): "+formatMoney(total)+" (fatura não trouxe um total pra conferir)";
+        checkEl.textContent = txt;
       }
+      var mesesList = Object.keys(meses).sort();
+      var btn = document.getElementById("fatura-confirm-btn");
+      btn.disabled = count===0;
+      btn.textContent = count===0 ? "Nada selecionado" :
+        "Importar "+count+" item(ns)"+(mesesList.length===1 ? " em "+mesLabelOf(isoToDate(mesesList[0]+"-01")) : " em "+mesesList.length+" meses");
+      var all = document.getElementById("fp-check-all");
+      all.checked = count===rows.length; all.indeterminate = count>0 && count<rows.length;
     }
-    previewEl.querySelectorAll(".fp-check").forEach(function(cb){ cb.addEventListener("change", recomputeCheck); });
-    recomputeCheck();
 
-    document.getElementById("fatura-confirm-btn").addEventListener("click", function(){
-      var added = 0;
-      previewEl.querySelectorAll("tbody tr").forEach(function(tr){
-        if(!tr.querySelector(".fp-check").checked) return;
-        var it = items[parseInt(tr.dataset.i,10)];
-        var categoria = tr.querySelector(".fp-categoria").value;
-        var tipo = tr.querySelector(".fp-tipo").value;
-        createFaturaItem(it, categoria, tipo, mesKeyOf(mesBase));
-        learnMerchantRule(it.estab, categoria, tipo);
-        added++;
+    var tbody = previewEl.querySelector("tbody");
+    tbody.addEventListener("change", function(e){
+      var tr = e.target.closest("tr"); if(!tr) return;
+      var i = parseInt(tr.dataset.i,10), r = rows[i], st = IMPORT.rowState[i];
+      if(e.target.classList.contains("fp-check")){
+        st.checked = r.checked = e.target.checked;
+        tr.classList.toggle("is-off", !r.checked);
+        recompute();
+      } else if(e.target.classList.contains("fp-categoria")){
+        st.categoria = r.categoria = e.target.value;
+        if(!st.tipoTouched){
+          st.tipo = r.tipo = CATEGORIA_TIPO_PADRAO[r.categoria] || "superfluo";
+          tr.querySelector(".fp-tipo").value = r.tipo;
+        }
+      } else if(e.target.classList.contains("fp-tipo")){
+        st.tipo = r.tipo = e.target.value; st.tipoTouched = true;
+      } else if(e.target.classList.contains("fp-desc")){
+        st.desc = r.desc = e.target.value;
+      }
+    });
+    document.getElementById("fp-check-all").addEventListener("change", function(e){
+      var on = e.target.checked;
+      rows.forEach(function(r){ r.checked = on; IMPORT.rowState[r.i].checked = on; });
+      tbody.querySelectorAll("tr").forEach(function(tr){ tr.querySelector(".fp-check").checked = on; tr.classList.toggle("is-off", !on); });
+      recompute();
+    });
+    document.getElementById("imp-kind").addEventListener("change", function(e){
+      IMPORT.kind = e.target.value;
+      IMPORT.aloc = IMPORT.kind==="cartao" ? "mes" : "data";
+      renderImportPreview();
+    });
+    document.getElementById("imp-aloc").addEventListener("change", function(e){ IMPORT.aloc = e.target.value; renderImportPreview(); });
+    document.getElementById("imp-mes").addEventListener("change", function(e){
+      if(/^\d{4}-\d{2}$/.test(e.target.value)){ IMPORT.mesKey = e.target.value; IMPORT.mesEstimado = false; renderImportPreview(); }
+    });
+    document.getElementById("imp-invert").addEventListener("click", function(){
+      IMPORT.outflowSign = -IMPORT.outflowSign;
+      IMPORT.rowState.forEach(function(st){ delete st.checked; });
+      renderImportPreview();
+    });
+    document.getElementById("fatura-cancel-btn").addEventListener("click", resetImportUI);
+    document.getElementById("fatura-confirm-btn").addEventListener("click", function(){ confirmImport(rows); });
+    recompute();
+  }
+
+  function buildPayloads(r, source){
+    var tx = r.tx;
+    var total = tx.parcelaTotal || 1, startIdx = tx.parcelaIdx || 1;
+    if(total<2 || startIdx>total){ total = 1; startIdx = 1; }
+    var groupId = total>1 ? ("imp-"+Date.now()+"-"+Math.random().toString(36).slice(2,7)) : null;
+    var out = [];
+    for(var k=startIdx; k<=total; k++){
+      out.push({
+        desc: (r.desc||"").trim() || tx.desc, descOriginal: tx.desc,
+        categoria: r.categoria, tipo: r.tipo, valor: r.valor, isExample:false,
+        createdAt: Date.now() + (importSeq++), mesRef: addMonthsToKey(r.mesKey, k-startIdx),
+        parcelaTotal: total, parcelaIndex: k, parcelaGrupo: groupId,
+        data: k===startIdx ? (tx.data || null) : null,
+        origem: source
       });
-      refreshMonthView();
-      document.getElementById("fatura-status").textContent = added+" item(ns) importado(s) a partir de "+mesLabelOf(mesBase)+".";
-      document.getElementById("fatura-cardholder-picker").innerHTML = "";
-      previewEl.innerHTML = "";
-      document.getElementById("fatura-file-input").value = "";
+    }
+    return out;
+  }
+
+  function persistNewItems(payloads){
+    if(!payloads.length) return;
+    if(mode==="firebase"){
+      var updates = {};
+      var itemsRef = db.ref(FIREBASE_PATH+"/items");
+      payloads.forEach(function(p){ updates[itemsRef.push().key] = p; });
+      itemsRef.update(updates).catch(function(e){
+        console.error(e);
+        window.alert("Não consegui salvar a importação no banco de dados. Confira a conexão e tente de novo.");
+      });
+    } else {
+      payloads.forEach(function(p, i){
+        STATE.items.push(Object.assign({ id: "local-"+Date.now()+"-i"+i+"-"+Math.random().toString(36).slice(2,7) }, p));
+      });
+      saveLocal();
+    }
+  }
+
+  function confirmImport(rows){
+    var selected = rows.filter(function(r){ return r.checked; })
+      .sort(function(a,b){ return String(a.tx.data||"").localeCompare(String(b.tx.data||"")); });
+    if(!selected.length) return;
+    var payloads = [], futuras = 0, meses = {};
+    selected.forEach(function(r){
+      var ps = buildPayloads(r, IMPORT.doc.source);
+      futuras += ps.length-1;
+      meses[r.mesKey] = true;
+      payloads = payloads.concat(ps);
+      learnMerchantRule(r.tx.desc, r.categoria, r.tipo);
+    });
+    persistNewItems(payloads);
+    var mesesList = Object.keys(meses).sort();
+    if(mesesList.length===1) currentViewMonth = isoToDate(mesesList[0]+"-01");
+    refreshMonthView();
+    resetImportUI();
+    document.getElementById("fatura-status").textContent =
+      "✓ "+selected.length+" gasto(s) importado(s) e salvo(s)"+
+      (mesesList.length===1 ? " em "+mesLabelOf(isoToDate(mesesList[0]+"-01")) : ", distribuídos entre "+mesLabelOf(isoToDate(mesesList[0]+"-01"))+" e "+mesLabelOf(isoToDate(mesesList[mesesList.length-1]+"-01")))+
+      (futuras ? " — mais "+futuras+" parcela(s) futura(s) já lançada(s) nos meses seguintes." : ".");
+  }
+
+  function resetImportUI(){
+    IMPORT = null;
+    document.getElementById("fatura-cardholder-picker").innerHTML = "";
+    document.getElementById("fatura-preview").innerHTML = "";
+    document.getElementById("fatura-file-input").value = "";
+  }
+
+  function renderCardholderPicker(options){
+    var pickerEl = document.getElementById("fatura-cardholder-picker");
+    pickerEl.innerHTML = options.map(function(o, i){
+      return '<button type="button" class="cardholder-btn" data-idx="'+i+'">'+escapeXml(o.name)+'<span class="ch-sub">'+escapeXml(o.sub||"")+'</span></button>';
+    }).join("");
+    pickerEl.querySelectorAll(".cardholder-btn").forEach(function(btn){
+      btn.addEventListener("click", function(){ startImport(options[parseInt(btn.dataset.idx,10)].doc); });
     });
   }
 
@@ -1471,43 +2199,43 @@
     var file = e.target.files[0];
     if(!file) return;
     var statusEl = document.getElementById("fatura-status");
+    var fileInput = e.target;
+    IMPORT = null;
     document.getElementById("fatura-cardholder-picker").innerHTML = "";
     document.getElementById("fatura-preview").innerHTML = "";
-    statusEl.textContent = "Lendo PDF...";
-    if(typeof pdfjsLib === "undefined"){
-      statusEl.textContent = "Não consegui carregar o leitor de PDF agora. Cole os dados manualmente abaixo.";
-      return;
-    }
-    var reader = new FileReader();
-    reader.onload = function(){
-      extractPdfRows(reader.result).then(function(rows){
-        var fullText = rows.map(function(r){ return r.text; }).join(" ");
-        if(!/ita[uú]/i.test(fullText)){
-          statusEl.textContent = "Ainda não reconheço esse formato de fatura/extrato automaticamente. Cole os dados manualmente abaixo.";
-          return;
-        }
-        var sections = findCardholderSections(rows, fullText);
-        if(!sections.length){
-          statusEl.textContent = "Não encontrei lançamentos de compras/saques nessa fatura. Cole os dados manualmente abaixo.";
-          return;
-        }
-        window.__faturaRows = rows;
-        window.__faturaVencimento = extractVencimento(fullText);
-        if(sections.length>1){
-          statusEl.textContent = "Encontrei "+sections.length+" titular(es) nesta fatura. Escolha qual importar:";
-        } else if(sections[0].final){
-          statusEl.textContent = "Encontrei os lançamentos desta fatura. Confira antes de importar:";
+    statusEl.textContent = "Lendo "+file.name+"...";
+    var name = file.name.toLowerCase();
+    file.arrayBuffer().then(function(buf){
+      var head = new Uint8Array(buf.slice(0,5));
+      var isPdf = head[0]===0x25 && head[1]===0x50 && head[2]===0x44 && head[3]===0x46;
+      if(isPdf || /\.pdf$/.test(name)) return readPdfDoc(buf, file.name);
+      if(/\.(xlsx|xls)$/.test(name)) return readExcelDoc(buf, file.name);
+      var text = decodeText(buf);
+      if(/OFXHEADER|<OFX>/i.test(text) || /\.(ofx|qfx)$/.test(name)) return parseOfx(text, file.name);
+      return parseCsvDoc(text, file.name);
+    }).then(function(result){
+      if(result && result.sections){
+        if(result.sections.length===1){
+          statusEl.textContent = "Encontrei os lançamentos desta fatura. Confira, ajuste o que precisar e importe:";
+          startImport(result.sections[0].doc);
         } else {
-          statusEl.textContent = "Não consegui separar por titular nesta fatura — a lista abaixo pode ter lançamentos de mais de uma pessoa. Desmarque o que não for do titular que você quer importar.";
+          statusEl.textContent = "Encontrei "+result.sections.filter(function(o){ return o.doc.source.indexOf("todos os titulares")===-1; }).length+" grupo(s) de lançamentos nesta fatura. Escolha qual importar (ou todos de uma vez):";
+          renderCardholderPicker(result.sections);
         }
-        renderCardholderPicker(sections);
-      }).catch(function(err){
-        console.error(err);
-        statusEl.textContent = "Não consegui ler esse PDF automaticamente. Cole os dados manualmente abaixo.";
-      });
-    };
-    reader.onerror = function(){ statusEl.textContent = "Não consegui abrir esse arquivo."; };
-    reader.readAsArrayBuffer(file);
+        return;
+      }
+      if(!result || !result.txs.length){
+        statusEl.textContent = "Não encontrei lançamentos nesse arquivo. Se for um PDF escaneado (imagem), exporte o extrato/fatura em CSV, OFX ou Excel pelo app ou internet banking e tente de novo — ou cole os dados manualmente abaixo.";
+        fileInput.value = "";
+        return;
+      }
+      statusEl.textContent = "Encontrei "+result.txs.length+" lançamento(s). Confira a categoria sugerida, desmarque o que não for gasto e importe:";
+      startImport(result);
+    }).catch(function(err){
+      console.error(err);
+      statusEl.textContent = "Não consegui ler esse arquivo automaticamente. Tente exportar em outro formato (CSV ou OFX) ou cole os dados manualmente abaixo.";
+      fileInput.value = "";
+    });
   });
 
   document.getElementById("import-btn").addEventListener("click", function(){
@@ -1543,6 +2271,82 @@
       if(isNaN(v) || v<0) v = 0;
       store.setConfig({ renda:v });
     }, 500);
+  });
+
+  /* ---------- consulta (busca em todos os meses) ---------- */
+
+  var qEls = {
+    texto: document.getElementById("q-texto"), categoria: document.getElementById("q-categoria"),
+    tipo: document.getElementById("q-tipo"), de: document.getElementById("q-de"), ate: document.getElementById("q-ate")
+  };
+  qEls.categoria.innerHTML = '<option value="">Todas as categorias</option>' + categoriaOptions(null);
+  qEls.categoria.value = "";
+
+  function renderConsulta(){
+    if(document.getElementById("tab-consultar").hidden) return;
+    var q = normalizeText(qEls.texto.value).trim();
+    var cat = qEls.categoria.value, tipo = qEls.tipo.value, de = qEls.de.value, ate = qEls.ate.value;
+    var list = STATE.items.filter(function(it){
+      var mes = it.mesRef || "";
+      if(de && mes<de) return false;
+      if(ate && mes>ate) return false;
+      if(cat && it.categoria!==cat) return false;
+      if(tipo && it.tipo!==tipo) return false;
+      if(q && normalizeText(it.desc).indexOf(q)===-1 && normalizeText(it.descOriginal).indexOf(q)===-1) return false;
+      return true;
+    }).sort(function(a,b){
+      if((a.mesRef||"")!==(b.mesRef||"")) return (a.mesRef||"")<(b.mesRef||"") ? 1 : -1;
+      if((a.data||"")!==(b.data||"")) return (a.data||"")<(b.data||"") ? 1 : -1;
+      return (b.createdAt||0)-(a.createdAt||0);
+    });
+    var total = 0, byCat = {};
+    list.forEach(function(it){
+      var v = Number(it.valor)||0;
+      total += v;
+      byCat[it.categoria||"Outros"] = (byCat[it.categoria||"Outros"]||0)+v;
+    });
+    var meses = {};
+    list.forEach(function(it){ meses[it.mesRef] = true; });
+    var nMeses = Object.keys(meses).length;
+    document.getElementById("q-resumo").textContent = list.length
+      ? list.length+" lançamento(s) · total "+formatMoney(total)+(nMeses>1 ? " · média de "+formatMoney(total/nMeses)+" por mês ("+nMeses+" meses)" : "")
+      : "Nenhum lançamento encontrado com esses filtros.";
+    var LIMITE = 400;
+    document.getElementById("q-tbody").innerHTML = list.slice(0, LIMITE).map(function(it){
+      var parc = (Number(it.parcelaTotal)||1)>1 ? (it.parcelaIndex+"/"+it.parcelaTotal) : "—";
+      var mesLbl = it.mesRef ? monthShortLabel(isoToDate(it.mesRef+"-01")) : "—";
+      return '<tr data-mes="'+escapeAttr(it.mesRef||"")+'" title="Abrir este mês em Lançamentos">'+
+        '<td>'+escapeXml(mesLbl)+'</td>'+
+        '<td class="col-fp-data">'+escapeXml(formatIsoBR(it.data))+'</td>'+
+        '<td class="q-desc">'+escapeXml(it.desc||"(sem descrição)")+'</td>'+
+        '<td>'+escapeXml(it.categoria||"Outros")+'</td>'+
+        '<td>'+(it.tipo==="fixo" ? "Fixo" : "Supérfluo")+'</td>'+
+        '<td class="col-fp-valor">'+formatMoney(it.valor)+'</td>'+
+        '<td>'+parc+'</td>'+
+      '</tr>';
+    }).join("");
+    document.getElementById("q-nota").textContent = list.length>LIMITE ? ("Mostrando os "+LIMITE+" mais recentes — refine a busca para ver o resto. O total acima considera todos.") : "Clique numa linha para abrir o mês em Lançamentos e editar.";
+    var chartEl = document.getElementById("q-chart");
+    var data = Object.keys(byCat).map(function(k){ return { label:k, value:byCat[k] }; })
+      .filter(function(d){ return d.value>0; }).sort(function(a,b){ return b.value-a.value; });
+    if(!data.length){ chartEl.innerHTML = '<p class="empty-note">Sem gastos no resultado.</p>'; }
+    else {
+      chartEl.innerHTML = buildBarChartSvg(data, function(){ return "var(--fixo)"; }, function(d){ return d.label+" — "+formatMoney(d.value)+" ("+(total>0 ? (d.value/total*100).toFixed(0) : 0)+"%)"; });
+      wireTooltips(chartEl);
+    }
+  }
+
+  [qEls.texto, qEls.categoria, qEls.tipo, qEls.de, qEls.ate].forEach(function(el){
+    el.addEventListener("input", renderConsulta);
+    el.addEventListener("change", renderConsulta);
+  });
+  document.getElementById("q-tbody").addEventListener("click", function(e){
+    var tr = e.target.closest("tr");
+    if(!tr || !tr.dataset.mes) return;
+    currentViewMonth = isoToDate(tr.dataset.mes+"-01");
+    refreshMonthView();
+    document.querySelector('.tab-btn[data-tab="lancamentos"]').click();
+    window.scrollTo(0,0);
   });
 
   /* ---------- boot ---------- */
