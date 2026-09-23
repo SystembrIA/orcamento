@@ -224,6 +224,24 @@
   .bar-label{ fill:var(--text-secondary); font-size:12px; font-family:var(--font-body); }
   .bar-value{ fill:var(--text-primary); font-size:12px; font-weight:600; font-family:var(--font-body); font-variant-numeric:tabular-nums; }
   .bar-hit{ cursor:pointer; }
+  .bar-g{ outline:none; }
+  .bar-g.is-dim rect:not(.bar-hit){ opacity:0.35; }
+  .bar-g.is-dim text{ opacity:0.6; }
+  .bar-g.is-selected .bar-label{ font-weight:700; fill:var(--text-primary); }
+  .bar-g:focus-visible .bar-hit{ stroke:var(--fixo); stroke-width:2; }
+  .split-seg.is-clickable, .legend-item.is-clickable{ cursor:pointer; }
+  .split-seg.is-dim{ opacity:0.35; }
+  .split-seg:focus-visible, .legend-item.is-clickable:focus-visible{ outline:2px solid var(--fixo); outline-offset:2px; }
+  .legend-item.is-selected{ color:var(--text-primary); font-weight:700; }
+  .chart-hint{ font-size:12px; color:var(--text-muted); margin:-8px 0 12px; }
+  .drill{ margin-top:14px; padding-top:12px; border-top:1px solid var(--border); }
+  .drill[hidden]{ display:none; }
+  .drill-head{ display:flex; flex-wrap:wrap; gap:6px 14px; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .drill-title{ font-family:var(--font-display); font-weight:700; font-size:14px; }
+  .drill-meta{ font-size:12px; color:var(--text-secondary); font-variant-numeric:tabular-nums; margin-top:2px; }
+  .drill-table tbody tr[data-mes]{ cursor:pointer; }
+  .drill-table tbody tr[data-mes]:hover td{ background:var(--surface-2); }
+  .drill-table td.q-desc{ white-space:normal; min-width:150px; }
 
   .chart-scroll{ overflow-x:auto; }
   svg.candle-chart{ display:block; height:auto; flex:none; }
@@ -473,15 +491,21 @@
     </div>
     <div class="chart-card">
       <h2>Fixos vs. supérfluos</h2>
+      <p class="chart-hint">Clique em fixos ou supérfluos para ver os lançamentos.</p>
       <div id="chart-split"></div>
+      <div id="drill-split" class="drill" hidden></div>
     </div>
     <div class="chart-card">
       <h2>Maiores gastos</h2>
+      <p class="chart-hint">Clique num gasto para ver todos os lançamentos com esse nome no mês.</p>
       <div id="chart-top"></div>
+      <div id="drill-top" class="drill" hidden></div>
     </div>
     <div class="chart-card">
       <h2>Gastos por categoria</h2>
+      <p class="chart-hint">Clique numa categoria para ver os lançamentos dela.</p>
       <div id="chart-categoria"></div>
+      <div id="drill-categoria" class="drill" hidden></div>
     </div>
   </section>
 
@@ -527,7 +551,9 @@
     </div>
     <div class="chart-card">
       <h2>Por categoria no resultado</h2>
+      <p class="chart-hint">Clique numa categoria para ver os lançamentos dela no resultado.</p>
       <div id="q-chart"></div>
+      <div id="drill-consulta" class="drill" hidden></div>
     </div>
   </section>
 
@@ -865,18 +891,41 @@
 
   function renderSplit(totals){
     var el = document.getElementById("chart-split");
-    if(totals.total<=0){ el.innerHTML = '<p class="empty-note">Adicione gastos para ver esta comparação.</p>'; return; }
+    if(totals.total<=0){ el.innerHTML = '<p class="empty-note">Adicione gastos para ver esta comparação.</p>'; DRILL.split = null; renderDrill("drill-split", null); return; }
     var fixoPct = totals.fixo/totals.total*100;
     var superPct = totals.superfluo/totals.total*100;
+    var sel = DRILL.split;
+    function segAttrs(key, label, valor){
+      var on = sel===key;
+      return ' data-key="'+key+'" tabindex="0" role="button" aria-pressed="'+on+'" aria-label="'+escapeAttr(label+", "+formatMoney(valor)+(on ? ", lançamentos abertos abaixo" : ", ver lançamentos"))+'"';
+    }
+    function dimCls(key){ return sel!=null && sel!==key ? " is-dim" : ""; }
     el.innerHTML =
       '<div class="split-bar">' +
-        '<div class="split-seg seg-fixo" style="width:'+fixoPct+'%"></div>' +
-        '<div class="split-seg seg-superfluo" style="width:'+superPct+'%"></div>' +
+        '<div class="split-seg seg-fixo is-clickable'+dimCls("fixo")+'" style="width:'+fixoPct+'%"'+segAttrs("fixo","Gastos fixos",totals.fixo)+'></div>' +
+        '<div class="split-seg seg-superfluo is-clickable'+dimCls("superfluo")+'" style="width:'+superPct+'%"'+segAttrs("superfluo","Gastos supérfluos",totals.superfluo)+'></div>' +
       '</div>' +
       '<div class="split-legend">' +
-        '<div class="legend-item"><span class="dot dot-fixo"></span>Fixos — '+formatMoney(totals.fixo)+' ('+fixoPct.toFixed(0)+'%)</div>' +
-        '<div class="legend-item"><span class="dot dot-superfluo"></span>Supérfluos — '+formatMoney(totals.superfluo)+' ('+superPct.toFixed(0)+'%)</div>' +
+        '<div class="legend-item is-clickable'+(sel==="fixo"?" is-selected":"")+'" data-key="fixo" tabindex="-1"><span class="dot dot-fixo"></span>Fixos — '+formatMoney(totals.fixo)+' ('+fixoPct.toFixed(0)+'%)</div>' +
+        '<div class="legend-item is-clickable'+(sel==="superfluo"?" is-selected":"")+'" data-key="superfluo" tabindex="-1"><span class="dot dot-superfluo"></span>Supérfluos — '+formatMoney(totals.superfluo)+' ('+superPct.toFixed(0)+'%)</div>' +
       '</div>';
+    el.querySelectorAll("[data-key]").forEach(function(node){
+      function toggle(viaKeyboard){
+        var key = node.getAttribute("data-key");
+        DRILL.split = DRILL.split===key ? null : key;
+        renderSplit(computeTotals());
+        revealDrill("split");
+        if(viaKeyboard){ var seg = el.querySelector('.split-seg[data-key="'+key+'"]'); if(seg) seg.focus(); }
+      }
+      node.addEventListener("click", function(){ toggle(false); });
+      node.addEventListener("keydown", function(e){ if(e.key==="Enter" || e.key===" "){ e.preventDefault(); toggle(true); } });
+    });
+    if(sel==null){ renderDrill("drill-split", null); return; }
+    renderDrill("drill-split", {
+      title: sel==="fixo" ? "Gastos fixos" : "Gastos supérfluos", extraCol:"categoria", base: totals.total, baseLabel:"dos gastos do mês",
+      items: itemsForViewedMonth().filter(function(it){ return sel==="fixo" ? it.tipo==="fixo" : it.tipo!=="fixo"; }),
+      onClose: function(){ DRILL.split = null; renderSplit(computeTotals()); }
+    });
   }
 
   function renderGanhoGastos(totals){
@@ -912,7 +961,10 @@
     }
   }
 
-  function buildBarChartSvg(data, colorForRow, tipLabel){
+  // opts.selectable: cada barra vira um botão (clique/Enter abre os lançamentos dela);
+  // opts.selectedKey: barra aberta no momento — as outras ficam esmaecidas.
+  function buildBarChartSvg(data, colorForRow, tipLabel, opts){
+    opts = opts || {};
     var W = 600, rowH = 28, gap = 10, step = rowH+gap;
     var padTop = 8, padBottom = 8;
     var H = padTop + data.length*step - gap + padBottom;
@@ -926,14 +978,24 @@
       var label = escapeXml(truncate(d.label,22));
       var val = escapeXml(formatMoney(d.value));
       var tip = escapeAttr(tipLabel(d));
-      return '<g class="bar-g" data-tip="'+tip+'">' +
+      var attrs = "";
+      if(opts.selectable){
+        var sel = opts.selectedKey!=null && d.key===opts.selectedKey;
+        var dim = opts.selectedKey!=null && !sel;
+        attrs = ' data-key="'+escapeAttr(d.key)+'" tabindex="0" role="button" aria-pressed="'+sel+'" aria-label="'+escapeAttr(d.label+", "+formatMoney(d.value)+(sel ? ", lançamentos abertos abaixo" : ", ver lançamentos"))+'"'+
+          (sel ? ' data-selected="1"' : '');
+        attrs = ' class="bar-g'+(sel?" is-selected":"")+(dim?" is-dim":"")+'"' + attrs;
+      } else {
+        attrs = ' class="bar-g"';
+      }
+      return '<g'+attrs+' data-tip="'+tip+'">' +
         '<text x="'+labelX+'" y="'+(y+rowH*0.68)+'" class="bar-label">'+label+'</text>' +
         '<rect x="'+barX+'" y="'+(y+4)+'" width="'+w+'" height="'+(rowH-8)+'" rx="4" style="fill:'+color+'"></rect>' +
         '<text x="'+valueColX+'" y="'+(y+rowH*0.68)+'" text-anchor="end" class="bar-value">'+val+'</text>' +
         '<rect x="0" y="'+y+'" width="'+W+'" height="'+rowH+'" fill="transparent" class="bar-hit"></rect>' +
       '</g>';
     }).join("");
-    return '<svg viewBox="0 0 '+W+' '+H+'" class="bar-chart" role="img" aria-label="gráfico de barras">'+rows+'</svg>';
+    return '<svg viewBox="0 0 '+W+' '+H+'" class="bar-chart" role="'+(opts.selectable?"group":"img")+'" aria-label="gráfico de barras">'+rows+'</svg>';
   }
 
   function wireTooltips(container, selector){
@@ -956,27 +1018,113 @@
   }
   function hideTooltip(){ tooltipEl.hidden = true; }
 
+  /* ---------- detalhe ao clicar num gráfico ---------- */
+
+  // Item aberto em cada gráfico (null = fechado). Continua aberto ao trocar de mês se ainda existir.
+  var DRILL = { split:null, top:null, categoria:null, consulta:null };
+  var DRILL_EL = { split:"drill-split", top:"drill-top", categoria:"drill-categoria", consulta:"drill-consulta" };
+
+  // No celular a lista abre abaixo da dobra: rola só o necessário para ela aparecer.
+  function revealDrill(stateKey){
+    if(DRILL[stateKey]==null) return;
+    var el = document.getElementById(DRILL_EL[stateKey]);
+    if(el && !el.hidden && el.scrollIntoView) el.scrollIntoView({ block:"nearest", behavior:"smooth" });
+  }
+
+  function descKey(desc){ return normalizeText(desc||"(sem descrição)").replace(/\s+/g," ").trim(); }
+
+  // Tabela com os lançamentos por trás de uma barra, do maior para o menor valor.
+  function renderDrill(elId, cfg){
+    var el = document.getElementById(elId);
+    if(!el) return;
+    if(!cfg){ el.hidden = true; el.innerHTML = ""; return; }
+    var items = cfg.items.slice().sort(function(a,b){ return (Number(b.valor)||0)-(Number(a.valor)||0); });
+    var total = items.reduce(function(sum, it){ return sum+(Number(it.valor)||0); }, 0);
+    var pct = cfg.base>0 ? " · "+(total/cfg.base*100).toFixed(0)+"% "+cfg.baseLabel : "";
+    var rows = items.map(function(it){
+      var parc = (Number(it.parcelaTotal)||1)>1 ? (it.parcelaIndex+"/"+it.parcelaTotal) : "—";
+      var extra = cfg.extraCol==="tipo" ? (it.tipo==="fixo" ? "Fixo" : "Supérfluo") : escapeXml(it.categoria||"Outros");
+      return '<tr'+(cfg.showMes ? ' data-mes="'+escapeAttr(it.mesRef||"")+'" title="Abrir este mês em Lançamentos"' : '')+'>'+
+        (cfg.showMes ? '<td>'+escapeXml(it.mesRef ? monthShortLabel(isoToDate(it.mesRef+"-01")) : "—")+'</td>' : '')+
+        '<td class="col-fp-data">'+escapeXml(formatIsoBR(it.data))+'</td>'+
+        '<td class="q-desc">'+escapeXml(it.desc||"(sem descrição)")+'</td>'+
+        '<td>'+extra+'</td>'+
+        '<td class="col-fp-valor">'+formatMoney(it.valor)+'</td>'+
+        '<td>'+parc+'</td>'+
+      '</tr>';
+    }).join("");
+    el.innerHTML =
+      '<div class="drill-head"><div><div class="drill-title">'+escapeXml(cfg.title)+'</div>'+
+        '<div class="drill-meta">'+items.length+' lançamento(s) · '+formatMoney(total)+escapeXml(pct)+'</div></div>'+
+        '<button type="button" class="btn-ghost drill-close">✕ Fechar</button></div>'+
+      '<div class="table-wrap"><table class="fatura-preview-table drill-table">'+
+        '<thead><tr>'+(cfg.showMes?'<th>Mês</th>':'')+'<th>Data</th><th>Descrição</th><th>'+(cfg.extraCol==="tipo"?"Tipo":"Categoria")+'</th><th class="col-fp-valor">Valor</th><th>Parcela</th></tr></thead>'+
+        '<tbody>'+rows+'</tbody></table></div>';
+    el.hidden = false;
+    el.querySelector(".drill-close").addEventListener("click", cfg.onClose);
+  }
+
+  // Liga clique e teclado (Enter/Espaço) nas barras; alterna o item aberto e redesenha.
+  function wireBarDrill(container, stateKey, rerender){
+    container.querySelectorAll(".bar-g[data-key]").forEach(function(g){
+      function toggle(viaKeyboard){
+        var key = g.getAttribute("data-key");
+        DRILL[stateKey] = DRILL[stateKey]===key ? null : key;
+        hideTooltip();
+        rerender();
+        revealDrill(stateKey);
+        if(viaKeyboard){
+          var again = container.querySelector('.bar-g[data-key="'+(window.CSS && CSS.escape ? CSS.escape(key) : key)+'"]');
+          if(again) again.focus();
+        }
+      }
+      g.addEventListener("click", function(){ toggle(false); });
+      g.addEventListener("keydown", function(e){
+        if(e.key==="Enter" || e.key===" "){ e.preventDefault(); toggle(true); }
+      });
+    });
+  }
+
   function renderTop(){
     var el = document.getElementById("chart-top");
-    var data = itemsForViewedMonth()
-      .map(function(it){ return { label: it.desc||"(sem descrição)", value:Number(it.valor)||0, tipo:it.tipo, categoria:it.categoria }; })
+    var monthItems = itemsForViewedMonth();
+    var data = monthItems
+      .map(function(it){ return { key: descKey(it.desc), label: it.desc||"(sem descrição)", value:Number(it.valor)||0, tipo:it.tipo, categoria:it.categoria }; })
       .filter(function(d){ return d.value>0; })
       .sort(function(a,b){ return b.value-a.value; })
       .slice(0,8);
-    if(!data.length){ el.innerHTML = '<p class="empty-note">Adicione gastos com valor para ver o ranking.</p>'; return; }
-    el.innerHTML = buildBarChartSvg(data, function(d){ return d.tipo==="fixo" ? "var(--fixo)" : "var(--superfluo)"; }, function(d){ return d.label+" · "+d.categoria+" — "+formatMoney(d.value); });
+    if(!data.length){ el.innerHTML = '<p class="empty-note">Adicione gastos com valor para ver o ranking.</p>'; DRILL.top = null; renderDrill("drill-top", null); return; }
+    if(DRILL.top!=null && !data.some(function(d){ return d.key===DRILL.top; })) DRILL.top = null;
+    el.innerHTML = buildBarChartSvg(data, function(d){ return d.tipo==="fixo" ? "var(--fixo)" : "var(--superfluo)"; }, function(d){ return d.label+" · "+d.categoria+" — "+formatMoney(d.value); }, { selectable:true, selectedKey:DRILL.top });
     wireTooltips(el);
+    wireBarDrill(el, "top", renderTop);
+    if(DRILL.top==null){ renderDrill("drill-top", null); return; }
+    var sel = data.filter(function(d){ return d.key===DRILL.top; })[0];
+    var totalMes = monthItems.reduce(function(sum, it){ return sum+(Number(it.valor)||0); }, 0);
+    renderDrill("drill-top", {
+      title: sel.label, extraCol:"categoria", base: totalMes, baseLabel:"dos gastos do mês",
+      items: monthItems.filter(function(it){ return descKey(it.desc)===DRILL.top; }),
+      onClose: function(){ DRILL.top = null; renderTop(); }
+    });
   }
 
   function renderCategoria(totals){
     var el = document.getElementById("chart-categoria");
     var data = Object.keys(totals.byCategoria)
-      .map(function(k){ return { label:k, value:totals.byCategoria[k] }; })
+      .map(function(k){ return { key:k, label:k, value:totals.byCategoria[k] }; })
       .filter(function(d){ return d.value>0; })
       .sort(function(a,b){ return b.value-a.value; });
-    if(!data.length){ el.innerHTML = '<p class="empty-note">Adicione gastos para ver o total por categoria.</p>'; return; }
-    el.innerHTML = buildBarChartSvg(data, function(){ return "var(--fixo)"; }, function(d){ return d.label+" — "+formatMoney(d.value); });
+    if(!data.length){ el.innerHTML = '<p class="empty-note">Adicione gastos para ver o total por categoria.</p>'; DRILL.categoria = null; renderDrill("drill-categoria", null); return; }
+    if(DRILL.categoria!=null && !data.some(function(d){ return d.key===DRILL.categoria; })) DRILL.categoria = null;
+    el.innerHTML = buildBarChartSvg(data, function(){ return "var(--fixo)"; }, function(d){ return d.label+" — "+formatMoney(d.value); }, { selectable:true, selectedKey:DRILL.categoria });
     wireTooltips(el);
+    wireBarDrill(el, "categoria", function(){ renderCategoria(computeTotals()); });
+    if(DRILL.categoria==null){ renderDrill("drill-categoria", null); return; }
+    renderDrill("drill-categoria", {
+      title: DRILL.categoria, extraCol:"tipo", base: totals.total, baseLabel:"dos gastos do mês",
+      items: itemsForViewedMonth().filter(function(it){ return (it.categoria||"Outros")===DRILL.categoria; }),
+      onClose: function(){ DRILL.categoria = null; renderCategoria(computeTotals()); }
+    });
   }
 
   function formatMoneyCompact(v){
@@ -2327,27 +2475,37 @@
     }).join("");
     document.getElementById("q-nota").textContent = list.length>LIMITE ? ("Mostrando os "+LIMITE+" mais recentes — refine a busca para ver o resto. O total acima considera todos.") : "Clique numa linha para abrir o mês em Lançamentos e editar.";
     var chartEl = document.getElementById("q-chart");
-    var data = Object.keys(byCat).map(function(k){ return { label:k, value:byCat[k] }; })
+    var data = Object.keys(byCat).map(function(k){ return { key:k, label:k, value:byCat[k] }; })
       .filter(function(d){ return d.value>0; }).sort(function(a,b){ return b.value-a.value; });
+    if(DRILL.consulta!=null && !data.some(function(d){ return d.key===DRILL.consulta; })) DRILL.consulta = null;
     if(!data.length){ chartEl.innerHTML = '<p class="empty-note">Sem gastos no resultado.</p>'; }
     else {
-      chartEl.innerHTML = buildBarChartSvg(data, function(){ return "var(--fixo)"; }, function(d){ return d.label+" — "+formatMoney(d.value)+" ("+(total>0 ? (d.value/total*100).toFixed(0) : 0)+"%)"; });
+      chartEl.innerHTML = buildBarChartSvg(data, function(){ return "var(--fixo)"; }, function(d){ return d.label+" — "+formatMoney(d.value)+" ("+(total>0 ? (d.value/total*100).toFixed(0) : 0)+"%)"; }, { selectable:true, selectedKey:DRILL.consulta });
       wireTooltips(chartEl);
+      wireBarDrill(chartEl, "consulta", renderConsulta);
     }
+    if(DRILL.consulta==null){ renderDrill("drill-consulta", null); return; }
+    renderDrill("drill-consulta", {
+      title: DRILL.consulta, extraCol:"tipo", showMes:true, base: total, baseLabel:"do resultado",
+      items: list.filter(function(it){ return (it.categoria||"Outros")===DRILL.consulta; }),
+      onClose: function(){ DRILL.consulta = null; renderConsulta(); }
+    });
   }
 
   [qEls.texto, qEls.categoria, qEls.tipo, qEls.de, qEls.ate].forEach(function(el){
     el.addEventListener("input", renderConsulta);
     el.addEventListener("change", renderConsulta);
   });
-  document.getElementById("q-tbody").addEventListener("click", function(e){
+  function openMonthFromRow(e){
     var tr = e.target.closest("tr");
     if(!tr || !tr.dataset.mes) return;
     currentViewMonth = isoToDate(tr.dataset.mes+"-01");
     refreshMonthView();
     document.querySelector('.tab-btn[data-tab="lancamentos"]').click();
     window.scrollTo(0,0);
-  });
+  }
+  document.getElementById("q-tbody").addEventListener("click", openMonthFromRow);
+  document.getElementById("drill-consulta").addEventListener("click", openMonthFromRow);
 
   /* ---------- boot ---------- */
 
