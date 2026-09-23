@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Orçamento Doméstico</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-app-compat.min.js"></script>
@@ -382,6 +384,82 @@
   .tooltip[hidden]{ display:none; }
 
   .footer-note{ color:var(--text-muted); font-size:12px; text-align:center; margin-top:8px; }
+
+  /* ---------- versão celular: abas + mês + botão grande + lista em cartões ---------- */
+  .only-mobile{ display:none; }
+  @media (max-width:640px){
+    .only-desktop{ display:none !important; }
+    .only-mobile{ display:block; }
+    .month-nav{ width:100%; flex-wrap:nowrap; }
+    .month-nav-label{ flex:1 1 auto; width:auto; }
+    .month-nav #mes-prev, .month-nav #mes-next{ width:40px; height:40px; font-size:20px; }
+  }
+  .btn-big{
+    display:flex; align-items:center; justify-content:center; gap:8px; width:100%;
+    min-height:54px; font-size:16px; border-radius:14px; margin-bottom:16px;
+  }
+  .m-group{ background:var(--surface); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow); margin-bottom:14px; overflow:hidden; }
+  .m-group-head{
+    display:flex; align-items:center; gap:8px; padding:12px 14px; font-family:var(--font-display);
+    font-weight:700; font-size:15px; border-bottom:1px solid var(--border);
+  }
+  .m-group-total{ margin-left:auto; font-variant-numeric:tabular-nums; }
+  .m-list-ul{ list-style:none; margin:0; padding:0; }
+  .m-item{
+    appearance:none; width:100%; display:flex; align-items:center; gap:12px; text-align:left;
+    background:transparent; border:none; border-bottom:1px solid var(--border); padding:12px 14px;
+    color:var(--text-primary); cursor:pointer; min-height:56px;
+  }
+  .m-list-ul li:last-child .m-item{ border-bottom:none; }
+  .m-item:active{ background:var(--surface-2); }
+  .m-item-main{ flex:1 1 auto; min-width:0; }
+  .m-item-desc{ display:block; font-size:15px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .m-item-sub{ display:block; font-size:12px; color:var(--text-muted); margin-top:2px; }
+  .m-item-valor{ font-size:15px; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .m-item-valor.is-credit{ color:var(--good); }
+  .m-empty{ padding:14px; margin:0; color:var(--text-muted); font-size:14px; }
+  .m-total{ display:flex; justify-content:space-between; padding:4px 4px 12px; font-weight:700; font-size:15px; font-variant-numeric:tabular-nums; }
+
+  dialog.sheet{
+    border:none; padding:0; width:100%; max-width:520px; margin:auto auto 0; max-height:94vh; overflow:auto;
+    border-radius:18px 18px 0 0; background:var(--surface); color:var(--text-primary); box-shadow:var(--shadow);
+  }
+  @media (min-width:641px){ dialog.sheet{ margin:auto; border-radius:16px; } }
+  dialog.sheet::backdrop{ background:rgba(10,12,16,0.45); }
+  .sheet-form{ padding:18px 16px 20px; display:flex; flex-direction:column; gap:14px; }
+  .sheet-head{ display:flex; align-items:center; justify-content:space-between; }
+  .sheet-head h2{ font-size:18px; }
+  .sheet-x{ appearance:none; border:none; background:var(--surface-2); color:var(--text-secondary); width:36px; height:36px; border-radius:10px; font-size:16px; cursor:pointer; }
+  .seg{ display:grid; grid-template-columns:1fr 1fr; gap:8px; border:none; margin:0; padding:0; }
+  .seg legend{ font-size:12px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.03em; margin-bottom:6px; padding:0; }
+  .seg label{ position:relative; }
+  .seg input{ position:absolute; opacity:0; inset:0; margin:0; }
+  .seg label > span{
+    display:flex; align-items:center; justify-content:center; gap:8px; min-height:48px; border-radius:12px;
+    border:1.5px solid var(--border); font-weight:700; font-size:15px; color:var(--text-secondary); cursor:pointer;
+  }
+  .seg input:focus-visible + span{ outline:2px solid var(--fixo); outline-offset:2px; }
+  .seg input[value="fixo"]:checked + span{ border-color:var(--fixo); background:var(--fixo-soft); color:var(--fixo); }
+  .seg input[value="superfluo"]:checked + span{ border-color:var(--superfluo); background:var(--superfluo-soft); color:var(--superfluo); }
+  .fld{ display:flex; flex-direction:column; gap:6px; font-size:12px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.03em; }
+  .fld input, .fld select{
+    font-size:16px; font-weight:500; text-transform:none; letter-spacing:0; color:var(--text-primary);
+    border:1px solid var(--border); background:var(--surface-2); border-radius:12px; padding:12px; min-height:48px; width:100%;
+  }
+  .fld .money-input{ box-shadow:none; background:var(--surface-2); border-radius:12px; padding:0 12px; min-height:48px; }
+  .fld .money-input input{ border:none; background:transparent; padding:12px 0; min-height:0; width:100%; font-size:18px; font-weight:700; }
+  .fld input:focus, .fld select:focus{ outline:none; border-color:var(--fixo); }
+  .fld-row{ display:grid; grid-template-columns:1fr 110px; gap:10px; }
+  .fld-hint{ margin:-6px 0 0; font-size:13px; color:var(--text-secondary); }
+  .fld-hint:empty, .fld-erro:empty{ display:none; }
+  .fld-erro{ margin:0; font-size:14px; font-weight:600; color:var(--critical); }
+  .sheet-actions{ display:flex; gap:10px; margin-top:4px; }
+  .sheet-actions .btn-big{ margin:0; flex:1; }
+  .btn-danger{
+    appearance:none; border:1.5px solid var(--critical); background:transparent; color:var(--critical);
+    border-radius:14px; padding:0 18px; min-height:54px; font-size:15px; font-weight:700; cursor:pointer;
+  }
+  .btn-danger[hidden]{ display:none; }
 </style>
 
 <div class="page">
@@ -402,8 +480,8 @@
   <nav class="tabs" role="tablist">
     <button class="tab-btn active" data-tab="lancamentos" role="tab" aria-selected="true">Lançamentos</button>
     <button class="tab-btn" data-tab="graficos" role="tab" aria-selected="false">Gráficos</button>
-    <button class="tab-btn" data-tab="timeline" role="tab" aria-selected="false">Linha do tempo</button>
-    <button class="tab-btn" data-tab="consultar" role="tab" aria-selected="false">Consultar</button>
+    <button class="tab-btn only-desktop" data-tab="timeline" role="tab" aria-selected="false">Linha do tempo</button>
+    <button class="tab-btn only-desktop" data-tab="consultar" role="tab" aria-selected="false">Consultar</button>
   </nav>
 
   <section id="tab-lancamentos" class="tab-panel">
@@ -411,18 +489,23 @@
       <button type="button" id="mes-prev" class="btn-ghost" aria-label="Mês anterior">‹</button>
       <div class="month-nav-label" id="mes-nav-label">—</div>
       <button type="button" id="mes-next" class="btn-ghost" aria-label="Próximo mês">›</button>
-      <button type="button" id="mes-hoje-btn" class="btn-ghost">Hoje</button>
-      <button type="button" id="mes-limpar-btn" class="btn-ghost" title="Excluir todos os lançamentos (fixos e supérfluos) do mês exibido">🗑 Limpar mês</button>
+      <button type="button" id="mes-hoje-btn" class="btn-ghost only-desktop">Hoje</button>
+      <button type="button" id="mes-limpar-btn" class="btn-ghost only-desktop" title="Excluir todos os lançamentos (fixos e supérfluos) do mês exibido">🗑 Limpar mês</button>
     </div>
 
-    <div class="summary-row" id="summary-row-1"></div>
+    <div class="summary-row only-desktop" id="summary-row-1"></div>
 
-    <div id="examples-banner" class="examples-banner" hidden>
+    <div class="only-mobile">
+      <button type="button" class="btn-add btn-big" id="m-add-btn">＋ Adicionar despesa</button>
+      <div id="m-list"></div>
+    </div>
+
+    <div id="examples-banner" class="examples-banner only-desktop" hidden>
       <span>Estes são valores de exemplo, só para mostrar como funciona — edite ou remova antes de lançar seus gastos reais.</span>
       <button id="clear-examples-btn" class="btn-ghost">Remover exemplos</button>
     </div>
 
-    <details class="expense-card" id="import-card">
+    <details class="expense-card only-desktop" id="import-card">
       <summary>Importar extrato ou fatura (Inter, Itaú e outros bancos)</summary>
 
       <div class="fatura-upload-block">
@@ -450,7 +533,7 @@
       <p class="empty-note" id="import-feedback"></p>
     </details>
 
-    <div class="expense-card">
+    <div class="expense-card only-desktop">
       <div class="card-head">
         <h2><span class="dot dot-fixo"></span>Gastos fixos</h2>
         <button class="btn-add" data-tipo="fixo">+ Adicionar gasto fixo</button>
@@ -464,7 +547,7 @@
       </div>
     </div>
 
-    <div class="expense-card">
+    <div class="expense-card only-desktop">
       <div class="card-head">
         <h2><span class="dot dot-superfluo"></span>Gastos supérfluos</h2>
         <button class="btn-add" data-tipo="superfluo">+ Adicionar gasto supérfluo</button>
@@ -477,7 +560,7 @@
         </table>
       </div>
     </div>
-    <p class="footer-note">Os dados ficam salvos no banco de dados, mês a mês — pode fechar e voltar quando quiser, e buscar qualquer gasto na aba "Consultar". Em "Parcelas", informe em quantos meses esse gasto deve se repetir automaticamente. Ao trocar a categoria de um gasto, o app aprende e usa isso nas próximas importações.</p>
+    <p class="footer-note only-desktop">Os dados ficam salvos no banco de dados, mês a mês — pode fechar e voltar quando quiser, e buscar qualquer gasto na aba "Consultar". Em "Parcelas", informe em quantos meses esse gasto deve se repetir automaticamente. Ao trocar a categoria de um gasto, o app aprende e usa isso nas próximas importações.</p>
   </section>
 
   <section id="tab-graficos" class="tab-panel" hidden>
@@ -556,6 +639,43 @@
       <div id="drill-consulta" class="drill" hidden></div>
     </div>
   </section>
+
+  <dialog id="m-form" class="sheet" aria-labelledby="m-form-title">
+    <form class="sheet-form" id="m-form-el" novalidate>
+      <div class="sheet-head">
+        <h2 id="m-form-title">Nova despesa</h2>
+        <button type="button" class="sheet-x" id="m-form-x" aria-label="Fechar">✕</button>
+      </div>
+      <fieldset class="seg">
+        <legend>Tipo</legend>
+        <label><input type="radio" name="m-tipo" value="fixo"><span><span class="dot dot-fixo"></span>Fixo</span></label>
+        <label><input type="radio" name="m-tipo" value="superfluo" checked><span><span class="dot dot-superfluo"></span>Supérfluo</span></label>
+      </fieldset>
+      <label class="fld">Descrição
+        <input id="m-desc" type="text" placeholder="Ex.: Mercado, Uber, Escola" autocomplete="off" enterkeyhint="next">
+      </label>
+      <label class="fld">Categoria
+        <select id="m-cat"></select>
+      </label>
+      <div class="fld-row">
+        <label class="fld"><span id="m-valor-lbl">Valor</span>
+          <div class="money-input"><span>R$</span><input id="m-valor" type="text" inputmode="decimal" placeholder="0,00" autocomplete="off"></div>
+        </label>
+        <label class="fld">Parcelas
+          <input id="m-parc" type="number" min="1" max="72" step="1" value="1" inputmode="numeric">
+        </label>
+      </div>
+      <p class="fld-hint" id="m-parc-hint"></p>
+      <label class="fld">Data
+        <input id="m-data" type="date">
+      </label>
+      <p class="fld-erro" id="m-erro" role="alert"></p>
+      <div class="sheet-actions">
+        <button type="button" class="btn-danger" id="m-del" hidden>Excluir</button>
+        <button type="submit" class="btn-add btn-big" id="m-save">Salvar despesa</button>
+      </div>
+    </form>
+  </dialog>
 
   <div id="tooltip" class="tooltip" hidden></div>
 </div>
@@ -1258,6 +1378,7 @@
     updateMonthNavLabel();
     updateExamplesBanner();
     renderConsulta();
+    renderMobileList();
   }
 
   function syncRendaInput(){
@@ -2506,6 +2627,163 @@
   }
   document.getElementById("q-tbody").addEventListener("click", openMonthFromRow);
   document.getElementById("drill-consulta").addEventListener("click", openMonthFromRow);
+
+  /* ---------- celular: lista em cartões e formulário de despesa ---------- */
+
+  function renderMobileList(){
+    var el = document.getElementById("m-list");
+    if(!el) return;
+    var items = itemsForViewedMonth().slice().sort(function(a,b){
+      var da = a.data || "", dbb = b.data || "";
+      if(da!==dbb) return da<dbb ? 1 : -1;
+      return (b.createdAt||0)-(a.createdAt||0);
+    });
+    var total = 0;
+    var html = [["fixo","Gastos fixos"],["superfluo","Gastos supérfluos"]].map(function(g){
+      var list = items.filter(function(it){ return g[0]==="fixo" ? it.tipo==="fixo" : it.tipo!=="fixo"; });
+      var sub = list.reduce(function(sum, it){ return sum+(Number(it.valor)||0); }, 0);
+      total += sub;
+      var rows = list.map(function(it){
+        var v = Number(it.valor)||0;
+        var meta = [it.categoria||"Outros"];
+        if(it.data) meta.push(formatIsoBR(it.data).slice(0,5));
+        if((Number(it.parcelaTotal)||1)>1) meta.push("parcela "+it.parcelaIndex+"/"+it.parcelaTotal);
+        return '<li><button type="button" class="m-item" data-id="'+escapeAttr(it.id)+'" aria-label="'+escapeAttr((it.desc||"Sem descrição")+", "+formatMoney(v)+", editar")+'">'+
+          '<span class="m-item-main"><span class="m-item-desc">'+escapeXml(it.desc||"(sem descrição)")+'</span>'+
+          '<span class="m-item-sub">'+escapeXml(meta.join(" · "))+'</span></span>'+
+          '<span class="m-item-valor'+(v<0?" is-credit":"")+'">'+formatMoney(v)+'</span></button></li>';
+      }).join("");
+      return '<section class="m-group"><div class="m-group-head"><span class="dot dot-'+g[0]+'"></span>'+g[1]+
+        '<span class="m-group-total">'+formatMoney(sub)+'</span></div>'+
+        (rows ? '<ul class="m-list-ul">'+rows+'</ul>' : '<p class="m-empty">Nenhum gasto '+(g[0]==="fixo"?"fixo":"supérfluo")+' neste mês.</p>')+
+        '</section>';
+    }).join("");
+    el.innerHTML = html + '<div class="m-total"><span>Total do mês</span><span>'+formatMoney(total)+'</span></div>';
+  }
+
+  var mForm = {
+    dlg: document.getElementById("m-form"), el: document.getElementById("m-form-el"),
+    title: document.getElementById("m-form-title"), desc: document.getElementById("m-desc"),
+    cat: document.getElementById("m-cat"), valor: document.getElementById("m-valor"),
+    valorLbl: document.getElementById("m-valor-lbl"), parc: document.getElementById("m-parc"),
+    parcHint: document.getElementById("m-parc-hint"), data: document.getElementById("m-data"),
+    erro: document.getElementById("m-erro"), del: document.getElementById("m-del"),
+    editId: null, catTouched: false, tipoTouched: false
+  };
+
+  function mTipo(){ var r = mForm.el.querySelector('input[name="m-tipo"]:checked'); return r ? r.value : "superfluo"; }
+  function mSetTipo(t){ mForm.el.querySelectorAll('input[name="m-tipo"]').forEach(function(r){ r.checked = r.value===t; }); }
+  function monthBounds(key){
+    var d = isoToDate(key+"-01");
+    var last = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+    return { min: key+"-01", max: key+"-"+String(last).padStart(2,"0") };
+  }
+
+  function mUpdateParcHint(){
+    var n = parseInt(mForm.parc.value,10) || 1;
+    var v = Math.abs(parseAmount(mForm.valor.value));
+    var fixedParcela = mForm.parc.disabled;
+    mForm.valorLbl.textContent = (n>1 && !fixedParcela) ? "Valor de cada parcela" : "Valor";
+    if(fixedParcela) return;
+    mForm.parcHint.textContent = n>1
+      ? (n+" parcelas, uma por mês a partir de "+mesLabelOf(currentViewMonth)+(isNaN(v) || !v ? "" : " — total "+formatMoney(v*n)))
+      : "";
+  }
+
+  function openExpenseForm(id){
+    var it = id ? STATE.items.find(function(x){ return x.id===id; }) : null;
+    mForm.editId = it ? it.id : null;
+    mForm.catTouched = !!it; mForm.tipoTouched = !!it;
+    mForm.title.textContent = it ? "Editar despesa" : "Nova despesa";
+    mForm.erro.textContent = "";
+    mForm.cat.innerHTML = categoriaOptions(it ? it.categoria : "Outros");
+    mForm.desc.value = it ? (it.desc||"") : "";
+    mForm.valor.value = it ? String(Math.abs(Number(it.valor)||0)).replace(".",",") : "";
+    mSetTipo(it ? (it.tipo==="fixo" ? "fixo" : "superfluo") : "superfluo");
+    var key = it ? it.mesRef : viewedMonthKey();
+    var b = monthBounds(key);
+    mForm.data.min = b.min; mForm.data.max = b.max;
+    var hoje = new Date(), hojeIso = mesKeyOf(hoje)+"-"+String(hoje.getDate()).padStart(2,"0");
+    mForm.data.value = it ? (it.data||"") : (key===mesKeyOf(hoje) ? hojeIso : b.min);
+    var emGrupo = it && (Number(it.parcelaTotal)||1)>1;
+    mForm.parc.disabled = !!emGrupo;
+    mForm.parc.value = emGrupo ? it.parcelaTotal : 1;
+    mForm.parcHint.textContent = emGrupo ? ("Parcela "+it.parcelaIndex+" de "+it.parcelaTotal+" — o que você mudar aqui vale só para esta parcela.") : "";
+    mForm.del.hidden = !it;
+    mUpdateParcHint();
+    if(typeof mForm.dlg.showModal==="function") mForm.dlg.showModal(); else mForm.dlg.setAttribute("open","");
+    if(!it) setTimeout(function(){ mForm.desc.focus(); }, 50);
+  }
+
+  function closeExpenseForm(){
+    if(typeof mForm.dlg.close==="function") mForm.dlg.close(); else mForm.dlg.removeAttribute("open");
+  }
+
+  mForm.desc.addEventListener("input", function(){
+    var d = mForm.desc.value.trim();
+    if(!d) return;
+    // sugere categoria e tipo pelo nome (mesmas regras da importação), até a pessoa escolher na mão
+    if(!mForm.catTouched){ mForm.cat.value = guessCategoria(d, null); }
+    if(!mForm.tipoTouched){ mSetTipo(guessTipo(d, mForm.cat.value)); }
+  });
+  mForm.cat.addEventListener("change", function(){
+    mForm.catTouched = true;
+    if(!mForm.tipoTouched) mSetTipo(CATEGORIA_TIPO_PADRAO[mForm.cat.value] || "superfluo");
+  });
+  mForm.el.querySelectorAll('input[name="m-tipo"]').forEach(function(r){ r.addEventListener("change", function(){ mForm.tipoTouched = true; }); });
+  mForm.valor.addEventListener("input", mUpdateParcHint);
+  mForm.parc.addEventListener("input", mUpdateParcHint);
+  document.getElementById("m-form-x").addEventListener("click", closeExpenseForm);
+  mForm.dlg.addEventListener("click", function(e){ if(e.target===mForm.dlg) closeExpenseForm(); });
+
+  mForm.el.addEventListener("submit", function(e){
+    e.preventDefault();
+    var desc = mForm.desc.value.trim();
+    var valor = Math.abs(parseAmount(mForm.valor.value));
+    var n = Math.min(72, Math.max(1, parseInt(mForm.parc.value,10) || 1));
+    if(!desc){ mForm.erro.textContent = "Escreva uma descrição (ex.: Mercado, Uber)."; mForm.desc.focus(); return; }
+    if(isNaN(valor) || valor<=0){ mForm.erro.textContent = "Informe o valor da despesa."; mForm.valor.focus(); return; }
+    valor = Math.round(valor*100)/100;
+    var tipo = mTipo(), categoria = mForm.cat.value, data = mForm.data.value || null;
+    if(mForm.editId){
+      var it = STATE.items.find(function(x){ return x.id===mForm.editId; });
+      if(it){
+        var patch = { desc:desc, categoria:categoria, tipo:tipo, valor:valor, data:data };
+        Object.assign(it, patch);
+        store.updateItem(it.id, patch);
+        if(!mForm.parc.disabled && n>1) store.setParcelas(it.id, n);
+      }
+    } else {
+      var key = viewedMonthKey();
+      var grupo = n>1 ? ("man-"+Date.now()+"-"+Math.random().toString(36).slice(2,7)) : null;
+      var payloads = [];
+      for(var k=0;k<n;k++){
+        payloads.push({ desc:desc, categoria:categoria, tipo:tipo, valor:valor, isExample:false, createdAt: Date.now()+k,
+          mesRef: addMonthsToKey(key, k), parcelaTotal:n, parcelaIndex:k+1, parcelaGrupo:grupo,
+          data: k===0 ? data : null, origem:"manual" });
+      }
+      persistNewItems(payloads);
+    }
+    learnMerchantRule(desc, categoria, tipo);
+    closeExpenseForm();
+    refreshMonthView();
+  });
+
+  mForm.del.addEventListener("click", function(){
+    var it = STATE.items.find(function(x){ return x.id===mForm.editId; });
+    if(!it) return;
+    var parc = (Number(it.parcelaTotal)||1)>1 ? " (só a parcela "+it.parcelaIndex+"/"+it.parcelaTotal+")" : "";
+    if(!window.confirm('Excluir "'+(it.desc||"sem descrição")+'" de '+formatMoney(it.valor)+parc+"?")) return;
+    store.deleteItem(it.id);
+    closeExpenseForm();
+    refreshMonthView();
+  });
+
+  document.getElementById("m-add-btn").addEventListener("click", function(){ openExpenseForm(null); });
+  document.getElementById("m-list").addEventListener("click", function(e){
+    var b = e.target.closest(".m-item");
+    if(b) openExpenseForm(b.getAttribute("data-id"));
+  });
 
   /* ---------- boot ---------- */
 
