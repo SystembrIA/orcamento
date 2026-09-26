@@ -531,6 +531,7 @@
 
       <div class="fatura-upload-block">
         <p class="empty-note">Suba o extrato da conta ou a fatura do cartão em <strong>PDF, CSV, OFX ou Excel</strong>. O app lê data, descrição e valor de cada gasto, sugere a categoria (e aprende com as suas correções), distribui as parcelas nos meses seguintes e avisa o que já foi lançado antes. Você confere tudo antes de gravar.</p>
+        <p class="empty-note"><strong>Fatura do Itaú:</strong> o app lê só os gastos do cartão do Pedro — os outros titulares e os encargos da fatura ficam de fora.</p>
         <p class="empty-note">Onde baixar: <strong>Inter</strong> — app › Extrato (ou Cartões › Fatura) › ícone de compartilhar/exportar. <strong>Itaú</strong> — Extrato › "Salvar como" PDF/Excel/OFX, ou a fatura do cartão em PDF.</p>
         <label class="btn-add fatura-upload-label" for="fatura-file-input">📄 Selecionar arquivo do extrato/fatura
           <input type="file" id="fatura-file-input" accept=".pdf,.csv,.txt,.ofx,.qfx,.xls,.xlsx,application/pdf,text/csv" hidden>
@@ -2525,6 +2526,24 @@
     document.getElementById("fatura-file-input").value = "";
   }
 
+  // Titular cujos gastos este painel controla (nome como sai no cabeçalho da fatura Itaú).
+  // Pelo nome e não pelo final do cartão: o final muda quando o cartão é trocado.
+  var TITULAR_CONTROLADO = /\bPEDRO\b/i;
+
+  // Se o titular tiver mais de um cartão na fatura (ex.: físico e virtual), junta num só.
+  function juntarDocs(docs){
+    if(docs.length===1) return docs[0];
+    var base = Object.assign({}, docs[0]);
+    base.source = docs.map(function(d){ return d.source; }).join(" + ");
+    base.txs = [];
+    base.total = 0;
+    docs.forEach(function(d){
+      base.txs = base.txs.concat(d.txs);
+      base.total = (base.total==null || d.total==null) ? null : Math.round((base.total+d.total)*100)/100;
+    });
+    return base;
+  }
+
   function renderCardholderPicker(options){
     var pickerEl = document.getElementById("fatura-cardholder-picker");
     pickerEl.innerHTML = options.map(function(o, i){
@@ -2555,11 +2574,20 @@
       return parseCsvDoc(text, file.name);
     }).then(function(result){
       if(result && result.sections){
-        if(result.sections.length===1){
+        // Este painel controla só os gastos do Pedro: da fatura Itaú, lê sempre e somente o(s)
+        // cartão(ões) dele — os outros titulares e os encargos da fatura ficam de fora.
+        var doTitular = result.sections.filter(function(o){
+          return o.doc.source.indexOf("todos os titulares")===-1 && TITULAR_CONTROLADO.test(o.name);
+        });
+        if(doTitular.length){
+          var cartoes = doTitular.map(function(o){ return o.doc.source.replace(/^Fatura Itaú · /,""); }).join(" e ");
+          statusEl.textContent = "Li só os gastos de "+cartoes+". Confira e importe — as parcelas dos meses seguintes já são lançadas automaticamente.";
+          startImport(juntarDocs(doTitular.map(function(o){ return o.doc; })));
+        } else if(result.sections.length===1){
           statusEl.textContent = "Encontrei os lançamentos desta fatura. Confira, ajuste o que precisar e importe:";
           startImport(result.sections[0].doc);
         } else {
-          statusEl.textContent = "Encontrei "+result.sections.filter(function(o){ return o.doc.source.indexOf("todos os titulares")===-1; }).length+" grupo(s) de lançamentos nesta fatura. Escolha qual importar (ou todos de uma vez):";
+          statusEl.textContent = "Não encontrei o cartão do Pedro nesta fatura. Escolha abaixo qual importar:";
           renderCardholderPicker(result.sections);
         }
         return;
