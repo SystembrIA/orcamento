@@ -244,6 +244,9 @@
   .drill-table tbody tr[data-mes]{ cursor:pointer; }
   .drill-table tbody tr[data-mes]:hover td{ background:var(--surface-2); }
   .drill-table td.q-desc{ white-space:normal; min-width:150px; }
+  .drill-cards{ margin:0 -16px -18px; border-top:1px solid var(--border); }
+  .drill-card{ cursor:default; padding-left:16px; padding-right:16px; }
+  .drill-card[data-mes]{ cursor:pointer; }
 
   .chart-scroll{ overflow-x:auto; }
   svg.candle-chart{ display:block; height:auto; flex:none; }
@@ -1173,11 +1176,25 @@
         '<td>'+parc+'</td>'+
       '</tr>';
     }).join("");
+    // no celular a mesma lista vira cartões (a tabela não cabe na largura)
+    var cards = items.map(function(it){
+      var v = Number(it.valor)||0;
+      var meta = [];
+      if(cfg.showMes && it.mesRef) meta.push(monthShortLabel(isoToDate(it.mesRef+"-01")));
+      if(it.data) meta.push(formatIsoBR(it.data).slice(0,5));
+      meta.push(cfg.extraCol==="tipo" ? (it.tipo==="fixo" ? "Fixo" : "Supérfluo") : (it.categoria||"Outros"));
+      if((Number(it.parcelaTotal)||1)>1) meta.push("parcela "+it.parcelaIndex+"/"+it.parcelaTotal);
+      return '<li class="m-item drill-card"'+(cfg.showMes ? ' data-mes="'+escapeAttr(it.mesRef||"")+'"' : '')+'>'+
+        '<span class="m-item-main"><span class="m-item-desc">'+escapeXml(it.desc||"(sem descrição)")+'</span>'+
+        '<span class="m-item-sub">'+escapeXml(meta.join(" · "))+'</span></span>'+
+        '<span class="m-item-valor'+(v<0?" is-credit":"")+'">'+formatMoney(v)+'</span></li>';
+    }).join("");
     el.innerHTML =
       '<div class="drill-head"><div><div class="drill-title">'+escapeXml(cfg.title)+'</div>'+
         '<div class="drill-meta">'+items.length+' lançamento(s) · '+formatMoney(total)+escapeXml(pct)+'</div></div>'+
         '<button type="button" class="btn-ghost drill-close">✕ Fechar</button></div>'+
-      '<div class="table-wrap"><table class="fatura-preview-table drill-table">'+
+      '<ul class="m-list-ul drill-cards only-mobile">'+cards+'</ul>'+
+      '<div class="table-wrap only-desktop"><table class="fatura-preview-table drill-table">'+
         '<thead><tr>'+(cfg.showMes?'<th>Mês</th>':'')+'<th>Data</th><th>Descrição</th><th>'+(cfg.extraCol==="tipo"?"Tipo":"Categoria")+'</th><th class="col-fp-valor">Valor</th><th>Parcela</th></tr></thead>'+
         '<tbody>'+rows+'</tbody></table></div>';
     el.hidden = false;
@@ -2618,7 +2635,7 @@
     el.addEventListener("change", renderConsulta);
   });
   function openMonthFromRow(e){
-    var tr = e.target.closest("tr");
+    var tr = e.target.closest("[data-mes]");
     if(!tr || !tr.dataset.mes) return;
     currentViewMonth = isoToDate(tr.dataset.mes+"-01");
     refreshMonthView();
