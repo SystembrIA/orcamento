@@ -306,27 +306,17 @@
   .input-parcelas:focus{ border-color:var(--fixo); }
   .parcela-tag{ font-size:12px; font-weight:600; color:var(--text-secondary); font-variant-numeric:tabular-nums; cursor:help; }
 
-  #import-card summary{ font-family:var(--font-display); font-size:16px; font-weight:700; cursor:pointer; }
-  #import-card[open] summary{ margin-bottom:12px; }
-  #import-card .empty-note{ margin:8px 0; }
-  .import-textarea{
-    width:100%; min-height:90px; resize:vertical; border:1px solid var(--border); background:var(--surface-2);
-    border-radius:10px; padding:10px 12px; font-size:13px; font-family:var(--font-body); color:var(--text-primary);
-    outline:none; box-sizing:border-box;
-  }
-  .import-textarea:focus{ border-color:var(--fixo); }
   .import-controls{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:10px; }
   .import-controls select{
     border:1px solid var(--border); background:var(--surface); color:var(--text-primary);
     border-radius:8px; padding:8px 10px; font-size:13px; cursor:pointer;
   }
 
-  .fatura-upload-label{ display:inline-flex; align-items:center; gap:6px; cursor:pointer; }
-  .import-divider{
-    display:flex; align-items:center; gap:10px; margin:18px 0 14px; color:var(--text-muted); font-size:12px;
-    text-transform:uppercase; letter-spacing:0.04em; font-weight:700;
-  }
-  .import-divider::before, .import-divider::after{ content:""; flex:1; height:1px; background:var(--border); }
+  .btn-import{ display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; font-size:12px; cursor:pointer; white-space:nowrap; }
+  .btn-import:focus-within{ outline:2px solid var(--fixo); outline-offset:2px; }
+  #import-area[hidden]{ display:none !important; }
+  .import-area-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+  .import-area-head .empty-note{ margin:6px 0; font-weight:600; color:var(--text-secondary); }
 
   .cardholder-btn{
     appearance:none; border:1px solid var(--border); background:var(--surface); color:var(--text-primary);
@@ -512,6 +502,9 @@
       <button type="button" id="mes-next" class="btn-ghost" aria-label="Próximo mês">›</button>
       <button type="button" id="mes-hoje-btn" class="btn-ghost only-desktop">Hoje</button>
       <button type="button" id="mes-limpar-btn" class="btn-ghost only-desktop" title="Excluir todos os lançamentos (fixos e supérfluos) do mês exibido">🗑 Limpar mês</button>
+      <label class="btn-add btn-import only-desktop" for="fatura-file-input" title="Fatura ou extrato em PDF, CSV, OFX ou Excel">⬆ Importar arquivo
+        <input type="file" id="fatura-file-input" accept=".pdf,.csv,.txt,.ofx,.qfx,.xls,.xlsx,application/pdf,text/csv" hidden>
+      </label>
     </div>
 
     <div class="summary-row only-desktop" id="summary-row-1"></div>
@@ -526,34 +519,14 @@
       <button id="clear-examples-btn" class="btn-ghost">Remover exemplos</button>
     </div>
 
-    <details class="expense-card only-desktop" id="import-card">
-      <summary>Importar extrato ou fatura (Inter, Itaú e outros bancos)</summary>
-
-      <div class="fatura-upload-block">
-        <p class="empty-note">Suba o extrato da conta ou a fatura do cartão em <strong>PDF, CSV, OFX ou Excel</strong>. O app lê data, descrição e valor de cada gasto, sugere a categoria (e aprende com as suas correções), distribui as parcelas nos meses seguintes e avisa o que já foi lançado antes. Você confere tudo antes de gravar.</p>
-        <p class="empty-note"><strong>Fatura do Itaú:</strong> o app lê só os gastos do cartão do Pedro — os outros titulares e os encargos da fatura ficam de fora.</p>
-        <p class="empty-note">Onde baixar: <strong>Inter</strong> — app › Extrato (ou Cartões › Fatura) › ícone de compartilhar/exportar. <strong>Itaú</strong> — Extrato › "Salvar como" PDF/Excel/OFX, ou a fatura do cartão em PDF.</p>
-        <label class="btn-add fatura-upload-label" for="fatura-file-input">📄 Selecionar arquivo do extrato/fatura
-          <input type="file" id="fatura-file-input" accept=".pdf,.csv,.txt,.ofx,.qfx,.xls,.xlsx,application/pdf,text/csv" hidden>
-        </label>
+    <div class="expense-card only-desktop" id="import-area" hidden>
+      <div class="import-area-head">
         <p class="empty-note" id="fatura-status"></p>
-        <div id="fatura-cardholder-picker"></div>
-        <div id="fatura-preview"></div>
+        <button type="button" class="sheet-x" id="import-area-x" aria-label="Fechar importação">✕</button>
       </div>
-
-      <div class="import-divider"><span>ou cole manualmente</span></div>
-
-      <p class="empty-note">Cole uma linha por gasto, no formato <strong>Descrição; Valor</strong> (ou só descrição e valor no final da linha). Categoria e parcelas você ajusta depois, na tabela.</p>
-      <textarea id="import-textarea" class="import-textarea" rows="4" placeholder="Exemplo — cole aqui os seus gastos:&#10;Aluguel; 1200&#10;Internet; 150"></textarea>
-      <div class="import-controls">
-        <select id="import-tipo">
-          <option value="fixo">Gastos fixos</option>
-          <option value="superfluo">Gastos supérfluos</option>
-        </select>
-        <button id="import-btn" class="btn-add" type="button">Importar para o mês exibido</button>
-      </div>
-      <p class="empty-note" id="import-feedback"></p>
-    </details>
+      <div id="fatura-cardholder-picker"></div>
+      <div id="fatura-preview"></div>
+    </div>
 
     <div class="expense-card only-desktop">
       <div class="card-head">
@@ -1550,27 +1523,6 @@
 
   document.getElementById("clear-examples-btn").addEventListener("click", function(){ store.clearExamples(); });
 
-  function parseImportLine(line){
-    line = String(line||"").trim();
-    if(!line) return null;
-    var parts = line.split(/;|\t|\|/);
-    if(parts.length>=2){
-      var desc = parts[0].trim();
-      var valor = parseFloat(String(parts[1]).replace(/[^\d,.-]/g,"").replace(",","."));
-      if(!desc || isNaN(valor)) return null;
-      var categoria = parts[2] ? parts[2].trim() : null;
-      return { desc:desc, valor:valor, categoria:categoria };
-    }
-    var m = line.match(/^(.*?)[\s:–-]+([\d]+(?:[.,]\d+)?)\s*$/);
-    if(m){
-      var desc2 = m[1].trim();
-      var valor2 = parseFloat(m[2].replace(",","."));
-      if(!desc2 || isNaN(valor2)) return null;
-      return { desc:desc2, valor:valor2, categoria:null };
-    }
-    return null;
-  }
-
   /* ---------- fatura/extrato PDF import ---------- */
 
   if(typeof pdfjsLib !== "undefined"){
@@ -2513,14 +2465,18 @@
     if(mesesList.length===1) currentViewMonth = isoToDate(mesesList[0]+"-01");
     refreshMonthView();
     resetImportUI();
+    showImportArea(true);
     document.getElementById("fatura-status").textContent =
       "✓ "+selected.length+" gasto(s) importado(s) e salvo(s)"+
       (mesesList.length===1 ? " em "+mesLabelOf(isoToDate(mesesList[0]+"-01")) : ", distribuídos entre "+mesLabelOf(isoToDate(mesesList[0]+"-01"))+" e "+mesLabelOf(isoToDate(mesesList[mesesList.length-1]+"-01")))+
       (futuras ? " — mais "+futuras+" parcela(s) futura(s) já lançada(s) nos meses seguintes." : ".");
   }
 
+  function showImportArea(on){ document.getElementById("import-area").hidden = !on; }
+
   function resetImportUI(){
     IMPORT = null;
+    showImportArea(false);
     document.getElementById("fatura-cardholder-picker").innerHTML = "";
     document.getElementById("fatura-preview").innerHTML = "";
     document.getElementById("fatura-file-input").value = "";
@@ -2544,6 +2500,11 @@
     return base;
   }
 
+  document.getElementById("import-area-x").addEventListener("click", function(){
+    resetImportUI();
+    document.getElementById("fatura-status").textContent = "";
+  });
+
   function renderCardholderPicker(options){
     var pickerEl = document.getElementById("fatura-cardholder-picker");
     pickerEl.innerHTML = options.map(function(o, i){
@@ -2563,6 +2524,7 @@
     document.getElementById("fatura-cardholder-picker").innerHTML = "";
     document.getElementById("fatura-preview").innerHTML = "";
     statusEl.textContent = "Lendo "+file.name+"...";
+    showImportArea(true);
     var name = file.name.toLowerCase();
     file.arrayBuffer().then(function(buf){
       var head = new Uint8Array(buf.slice(0,5));
@@ -2593,7 +2555,7 @@
         return;
       }
       if(!result || !result.txs.length){
-        statusEl.textContent = "Não encontrei lançamentos nesse arquivo. Se for um PDF escaneado (imagem), exporte o extrato/fatura em CSV, OFX ou Excel pelo app ou internet banking e tente de novo — ou cole os dados manualmente abaixo.";
+        statusEl.textContent = "Não encontrei lançamentos nesse arquivo. Se for um PDF escaneado (imagem), exporte o extrato/fatura em CSV, OFX ou Excel pelo app ou internet banking e tente de novo.";
         fileInput.value = "";
         return;
       }
@@ -2601,33 +2563,9 @@
       startImport(result);
     }).catch(function(err){
       console.error(err);
-      statusEl.textContent = "Não consegui ler esse arquivo automaticamente. Tente exportar em outro formato (CSV ou OFX) ou cole os dados manualmente abaixo.";
+      statusEl.textContent = "Não consegui ler esse arquivo automaticamente. Tente exportar em outro formato (CSV ou OFX).";
       fileInput.value = "";
     });
-  });
-
-  document.getElementById("import-btn").addEventListener("click", function(){
-    var tipo = document.getElementById("import-tipo").value;
-    var textarea = document.getElementById("import-textarea");
-    var lines = textarea.value.split("\n");
-    var added = 0;
-    lines.forEach(function(line){
-      var parsed = parseImportLine(line);
-      if(!parsed) return;
-      var id = store.addItem(tipo);
-      var patch = { desc: parsed.desc, valor: parsed.valor };
-      if(parsed.categoria && CATEGORIAS.indexOf(parsed.categoria)!==-1){ patch.categoria = parsed.categoria; }
-      store.updateItem(id, patch);
-      added++;
-    });
-    var fb = document.getElementById("import-feedback");
-    if(added>0){
-      textarea.value = "";
-      refreshMonthView();
-      fb.textContent = added+" gasto(s) adicionado(s) em "+mesLabelOf(currentViewMonth)+".";
-    } else {
-      fb.textContent = "Não reconheci nenhuma linha. Use o formato Descrição; Valor (um gasto por linha).";
-    }
   });
 
   var rendaInput = document.getElementById("renda-input");
