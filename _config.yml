@@ -1,0 +1,3 @@
+# O site publica só o app; as instruções do Claude ficam só no repositório.
+exclude:
+  - CLAUDE.md
