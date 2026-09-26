@@ -283,6 +283,18 @@
     .month-nav{ flex-wrap:wrap; width:auto; }
     .month-nav-label{ width:auto; flex:1 1 120px; }
   }
+  .view-toggle{
+    display:grid; grid-template-columns:1fr 1fr; gap:4px; max-width:420px; margin-bottom:6px;
+    background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:4px;
+  }
+  .view-btn{
+    appearance:none; border:none; background:transparent; cursor:pointer; border-radius:9px;
+    padding:10px 12px; font-size:14px; font-weight:700; color:var(--text-secondary); min-height:42px;
+  }
+  .view-btn[aria-pressed="true"]{ background:var(--surface); color:var(--text-primary); box-shadow:var(--shadow); }
+  .view-btn:focus-visible{ outline:2px solid var(--fixo); outline-offset:2px; }
+  .view-hint{ font-size:12px; color:var(--text-muted); margin:0 0 12px; max-width:560px; }
+  @media (max-width:640px){ .view-toggle{ max-width:none; } }
   .month-nav-readonly{ font-size:13px; color:var(--text-secondary); margin-bottom:14px; font-weight:600; text-transform:capitalize; }
 
   .col-parcelas{ width:96px; text-align:center; }
@@ -488,6 +500,12 @@
   </nav>
 
   <section id="tab-lancamentos" class="tab-panel">
+    <div class="view-toggle" role="group" aria-label="Quais gastos mostrar">
+      <button type="button" class="view-btn" data-mode="vencimento" aria-pressed="true">Vencendo no mês</button>
+      <button type="button" class="view-btn" data-mode="compra" aria-pressed="false">Gastos do mês</button>
+    </div>
+    <p class="view-hint"></p>
+
     <div class="month-nav" role="group" aria-label="Navegação de mês">
       <button type="button" id="mes-prev" class="btn-ghost" aria-label="Mês anterior">‹</button>
       <div class="month-nav-label" id="mes-nav-label">—</div>
@@ -567,6 +585,12 @@
   </section>
 
   <section id="tab-graficos" class="tab-panel" hidden>
+    <div class="view-toggle" role="group" aria-label="Quais gastos mostrar">
+      <button type="button" class="view-btn" data-mode="vencimento" aria-pressed="true">Vencendo no mês</button>
+      <button type="button" class="view-btn" data-mode="compra" aria-pressed="false">Gastos do mês</button>
+    </div>
+    <p class="view-hint"></p>
+
     <div class="month-nav-readonly" id="mes-nav-label-graficos">—</div>
     <div class="summary-row" id="summary-row-2"></div>
 
@@ -740,9 +764,24 @@
     return mesKeyOf(new Date(y, m+n, 1));
   }
   function viewedMonthKey(){ return mesKeyOf(currentViewMonth); }
+
+  // Dois jeitos de ver um mês:
+  // - "vencimento": o que vence (é pago) no mês — a fatura que vence em setembro inteira em
+  //   setembro, mesmo com compras feitas em agosto. É o mês gravado em mesRef.
+  // - "compra": o que foi gasto no mês, pela data da compra. Parcelas contam no mês de cada
+  //   parcela (a data impressa na fatura é a da compra original, não a da parcela), e gasto sem
+  //   data cai no mês em que vence.
+  var VIEW_MODE_KEY = "orcamento-modo-mes";
+  var viewMode = "vencimento";
+  try{ if(localStorage.getItem(VIEW_MODE_KEY)==="compra") viewMode = "compra"; } catch(e){}
+
+  function effectiveMonthKey(it){
+    if(viewMode==="compra" && it.data && (Number(it.parcelaTotal)||1)<=1) return String(it.data).slice(0,7);
+    return it.mesRef || "";
+  }
   function itemsForViewedMonth(){
     var key = viewedMonthKey();
-    return STATE.items.filter(function(it){ return (it.mesRef||"")===key; });
+    return STATE.items.filter(function(it){ return effectiveMonthKey(it)===key; });
   }
 
   /* ---------- persistence layer ---------- */
@@ -1413,13 +1452,28 @@
 
   /* ---------- month navigation ---------- */
 
+  document.querySelectorAll(".view-btn").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      if(viewMode===btn.dataset.mode) return;
+      viewMode = btn.dataset.mode;
+      try{ localStorage.setItem(VIEW_MODE_KEY, viewMode); } catch(e){}
+      refreshMonthView();
+    });
+  });
+
   function updateMonthNavLabel(){
     var label = mesLabelOf(currentViewMonth);
     var isToday = viewedMonthKey() === mesKeyOf(new Date());
     var navLabel = document.getElementById("mes-nav-label");
     if(navLabel) navLabel.textContent = label + (isToday ? " (atual)" : "");
     var navLabelGraficos = document.getElementById("mes-nav-label-graficos");
-    if(navLabelGraficos) navLabelGraficos.textContent = "Exibindo dados de: " + label + (isToday ? " (mês atual)" : "");
+    if(navLabelGraficos) navLabelGraficos.textContent = (viewMode==="compra" ? "Gastos feitos em " : "Vencendo em ") + label + (isToday ? " (mês atual)" : "");
+    document.querySelectorAll(".view-btn").forEach(function(b){ b.setAttribute("aria-pressed", String(b.dataset.mode===viewMode)); });
+    document.querySelectorAll(".view-hint").forEach(function(h){
+      h.textContent = viewMode==="compra"
+        ? "Compras feitas em "+label+", pela data da compra. Parcelas contam no mês de cada parcela."
+        : "Tudo que vence em "+label+" — a fatura do cartão entra inteira, inclusive compras do mês anterior.";
+    });
     var ganhoGastosLabel = document.getElementById("ganho-gastos-mes-label");
     if(ganhoGastosLabel) ganhoGastosLabel.textContent = label;
   }
@@ -1478,7 +1532,7 @@
   document.getElementById("mes-limpar-btn").addEventListener("click", function(){
     var itemsDoMes = itemsForViewedMonth();
     if(!itemsDoMes.length){ window.alert("Não há lançamentos em "+mesLabelOf(currentViewMonth)+" para excluir."); return; }
-    var ok = window.confirm("Excluir os "+itemsDoMes.length+" lançamento(s) de "+mesLabelOf(currentViewMonth)+"? Essa ação não pode ser desfeita.");
+    var ok = window.confirm("Excluir os "+itemsDoMes.length+" lançamento(s) "+(viewMode==="compra" ? "com compra feita em " : "que vencem em ")+mesLabelOf(currentViewMonth)+"? Essa ação não pode ser desfeita.");
     if(!ok) return;
     itemsDoMes.forEach(function(it){ store.deleteItem(it.id); });
   });
