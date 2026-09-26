@@ -235,6 +235,9 @@
   .split-seg.is-dim{ opacity:0.35; }
   .split-seg:focus-visible, .legend-item.is-clickable:focus-visible{ outline:2px solid var(--fixo); outline-offset:2px; }
   .legend-item.is-selected{ color:var(--text-primary); font-weight:700; }
+  .base-sub{ font-size:14px; margin:18px 0 8px; }
+  .base-copia{ display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; justify-content:space-between; padding:10px 0; border-top:1px solid var(--border); font-size:13px; }
+  .base-copia strong{ font-variant-numeric:tabular-nums; }
   .chart-hint{ font-size:12px; color:var(--text-muted); margin:-8px 0 12px; }
   .drill{ margin-top:14px; padding-top:12px; border-top:1px solid var(--border); }
   .drill[hidden]{ display:none; }
@@ -638,6 +641,17 @@
       <p class="chart-hint">Clique numa categoria para ver os lançamentos dela no resultado.</p>
       <div id="q-chart"></div>
       <div id="drill-consulta" class="drill" hidden></div>
+    </div>
+    <div class="chart-card" id="base-card">
+      <h2>Base de dados</h2>
+      <p class="empty-note" id="base-resumo">—</p>
+      <div class="import-controls">
+        <button type="button" class="btn-add" id="base-zerar-btn">Guardar cópia e zerar lançamentos</button>
+        <button type="button" class="btn-ghost" id="base-baixar-btn">Baixar cópia em arquivo</button>
+      </div>
+      <p class="empty-note" id="base-status" role="status"></p>
+      <h2 class="base-sub">Cópias guardadas</h2>
+      <div id="base-copias"><p class="empty-note">Carregando…</p></div>
     </div>
   </section>
 
@@ -1409,6 +1423,7 @@
     updateExamplesBanner();
     renderConsulta();
     renderMobileList();
+    if(typeof renderBase==="function") renderBase();
   }
 
   function syncRendaInput(){
@@ -1487,7 +1502,7 @@
       document.querySelectorAll(".tab-panel").forEach(function(panel){
         panel.hidden = panel.id !== "tab-"+btn.dataset.tab;
       });
-      if(btn.dataset.tab==="consultar") renderConsulta();
+      if(btn.dataset.tab==="consultar"){ renderConsulta(); renderBase(); }
     });
   });
 
@@ -2820,6 +2835,122 @@
   document.getElementById("m-list").addEventListener("click", function(e){
     var b = e.target.closest(".m-item");
     if(b) openExpenseForm(b.getAttribute("data-id"));
+  });
+
+  /* ---------- base de dados: cópia de segurança, zerar e restaurar ---------- */
+
+  // Uma cópia guarda os lançamentos exatamente como estão (mesmas chaves), para restaurar igual.
+  // Categorias aprendidas e renda não entram: zerar apaga só os lançamentos.
+  var LOCAL_BACKUPS_KEY = "orcamento-copias-v1";
+
+  function itemsAsObject(){
+    var obj = {};
+    STATE.items.forEach(function(it){ var c = Object.assign({}, it); delete c.id; obj[it.id] = c; });
+    return obj;
+  }
+  function somaItems(items){ return items.reduce(function(s, it){ return s+(Number(it.valor)||0); }, 0); }
+
+  function listarCopias(){
+    if(mode==="firebase"){
+      return db.ref(FIREBASE_PATH+"/copias").once("value").then(function(snap){
+        var v = snap.val() || {};
+        return Object.keys(v).map(function(k){ return Object.assign({ key:k }, v[k]); });
+      });
+    }
+    var local = {};
+    try{ local = JSON.parse(localStorage.getItem(LOCAL_BACKUPS_KEY) || "{}"); } catch(e){}
+    return Promise.resolve(Object.keys(local).map(function(k){ return Object.assign({ key:k }, local[k]); }));
+  }
+
+  function guardarCopia(motivo){
+    var copia = { criadaEm: Date.now(), motivo: motivo, quantidade: STATE.items.length,
+                  total: Math.round(somaItems(STATE.items)*100)/100, items: itemsAsObject() };
+    var key = "c"+copia.criadaEm;
+    if(mode==="firebase") return db.ref(FIREBASE_PATH+"/copias/"+key).set(copia).then(function(){ return key; });
+    var local = {};
+    try{ local = JSON.parse(localStorage.getItem(LOCAL_BACKUPS_KEY) || "{}"); } catch(e){}
+    local[key] = copia;
+    localStorage.setItem(LOCAL_BACKUPS_KEY, JSON.stringify(local));
+    return Promise.resolve(key);
+  }
+
+  function substituirItems(novos){
+    if(mode==="firebase") return db.ref(FIREBASE_PATH+"/items").set(Object.keys(novos).length ? novos : null);
+    STATE.items = Object.keys(novos).map(function(k){ return Object.assign({ id:k }, novos[k]); });
+    saveLocal();
+    refreshMonthView();
+    return Promise.resolve();
+  }
+
+  function renderBase(){
+    var resumo = document.getElementById("base-resumo");
+    if(!resumo || document.getElementById("tab-consultar").hidden) return;
+    var meses = {};
+    STATE.items.forEach(function(it){ if(it.mesRef) meses[it.mesRef] = true; });
+    var ks = Object.keys(meses).sort();
+    resumo.textContent = STATE.items.length
+      ? STATE.items.length+" lançamento(s) gravados, somando "+formatMoney(somaItems(STATE.items))+(ks.length ? " — de "+mesLabelOf(isoToDate(ks[0]+"-01"))+" a "+mesLabelOf(isoToDate(ks[ks.length-1]+"-01"))+"." : ".")
+      : "Nenhum lançamento gravado.";
+    listarCopias().then(function(lista){
+      var el = document.getElementById("base-copias");
+      lista.sort(function(a,b){ return (b.criadaEm||0)-(a.criadaEm||0); });
+      el.innerHTML = lista.length ? lista.map(function(c){
+        var quando = new Date(c.criadaEm||0).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" });
+        return '<div class="base-copia"><span>'+escapeXml(quando)+' · <strong>'+(c.quantidade||0)+' lançamento(s) · '+formatMoney(c.total||0)+'</strong>'+
+          (c.motivo ? ' · '+escapeXml(c.motivo) : '')+'</span>'+
+          '<button type="button" class="btn-ghost" data-restaurar="'+escapeAttr(c.key)+'">Restaurar esta cópia</button></div>';
+      }).join("") : '<p class="empty-note">Nenhuma cópia guardada ainda.</p>';
+      el.querySelectorAll("[data-restaurar]").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          var c = lista.filter(function(x){ return x.key===btn.dataset.restaurar; })[0];
+          if(!c) return;
+          if(!window.confirm("Restaurar a cópia com "+(c.quantidade||0)+" lançamento(s)? Os lançamentos de agora serão substituídos — antes disso, eles também são guardados numa cópia.")) return;
+          var st = document.getElementById("base-status");
+          st.textContent = "Guardando uma cópia do que existe agora…";
+          guardarCopia("antes de restaurar").then(function(){
+            st.textContent = "Restaurando…";
+            return substituirItems(c.items || {});
+          }).then(function(){
+            st.textContent = "✓ Cópia restaurada: "+(c.quantidade||0)+" lançamento(s).";
+            renderBase();
+          }).catch(function(e){
+            console.error(e);
+            st.textContent = "⚠ Não consegui restaurar agora. Nada foi apagado — tente de novo.";
+          });
+        });
+      });
+    }).catch(function(e){
+      console.error(e);
+      document.getElementById("base-copias").innerHTML = '<p class="empty-note">Não consegui ler as cópias guardadas.</p>';
+    });
+  }
+
+  document.getElementById("base-zerar-btn").addEventListener("click", function(){
+    var n = STATE.items.length;
+    var st = document.getElementById("base-status");
+    if(!n){ st.textContent = "Não há lançamentos para zerar."; return; }
+    if(!window.confirm("Zerar TODOS os "+n+" lançamentos (todos os meses)? Antes de apagar, uma cópia completa fica guardada aqui e pode ser restaurada quando quiser.")) return;
+    st.textContent = "Guardando a cópia…";
+    // só apaga depois que a cópia foi gravada com sucesso
+    guardarCopia("antes de zerar").then(function(){
+      st.textContent = "Cópia guardada. Apagando os lançamentos…";
+      return substituirItems({});
+    }).then(function(){
+      st.textContent = "✓ Base zerada. "+n+" lançamento(s) guardados na cópia de "+new Date().toLocaleString("pt-BR")+". As categorias aprendidas e a renda foram mantidas.";
+      renderBase();
+    }).catch(function(e){
+      console.error(e);
+      st.textContent = "⚠ Não consegui guardar a cópia, então nada foi apagado. Tente de novo ou use \"Baixar cópia em arquivo\".";
+    });
+  });
+
+  document.getElementById("base-baixar-btn").addEventListener("click", function(){
+    var blob = new Blob([JSON.stringify({ criadaEm: new Date().toISOString(), items: itemsAsObject(), merchantRules: STATE.merchantRules, config: STATE.config }, null, 1)], { type:"application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "orcamento-copia-"+new Date().toISOString().slice(0,10)+".json";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
   });
 
   /* ---------- boot ---------- */

@@ -56,4 +56,8 @@ de continuar. Nunca faça force push na `main`.
   "Adicionar despesa" (tipo fixo/supérfluo, descrição, categoria, valor, parcelas, data) e a lista
   em cartões. "Hoje", "Limpar mês", Linha do tempo, Consultar, resumo e importação ficam só no computador.
 - **Gráficos:** clicar/tocar numa barra abre abaixo os lançamentos daquela barra.
+- **Base de dados** (aba Consultar, só no computador): "Guardar cópia e zerar lançamentos" grava uma
+  cópia completa em `orcamento/copias` e só depois apaga `orcamento/items`; cada cópia pode ser
+  restaurada. Categorias aprendidas e renda nunca são apagadas. Zerar/restaurar é feito pelo Michael
+  no site, com o login dele — não mexa no banco por fora.
 - Categorias no estilo Mobills/Organizze; o app aprende a categoria quando o Michael corrige um gasto.
