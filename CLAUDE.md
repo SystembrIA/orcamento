@@ -58,6 +58,8 @@ de continuar. Nunca faça force push na `main`.
 - **Dois jeitos de ver o mês:** "Vencendo no mês" (o que vence/é pago no mês — padrão) e "Gastos do
   mês" (pela data da compra). Parcelas contam no mês de cada parcela; gasto sem data fica no mês em
   que vence.
+- **Filtros (computador):** numa linha só — Vencendo no mês · Gastos do mês · Tudo · Cartão de crédito ·
+  Débito — e o botão "Lançar despesa", que abre o mesmo passo a passo do celular.
 - **Celular (até 640px):** só as abas Lançamentos e Gráficos, a troca de mês, o botão grande
   "Novo lançamento" e a lista em cartões. O "Novo lançamento" é um passo a passo em tela cheia, um
   campo por tela: categoria (cartões, filtra ao digitar, mais usadas primeiro) → nome (sugere os
