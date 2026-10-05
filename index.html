@@ -50,6 +50,9 @@
     --grid: #e4e3db;
     --fixo: #2a78d6;
     --fixo-soft: rgba(42,120,214,0.12);
+    --tab: #0f766e;
+    --tab-soft: rgba(15,118,110,0.08);
+    --tab-border: rgba(15,118,110,0.25);
     --superfluo: #eb6834;
     --superfluo-soft: rgba(235,104,52,0.12);
     --good: #0ca30c;
@@ -70,6 +73,9 @@
     --grid: #2c2c2a;
     --fixo: #3987e5;
     --fixo-soft: rgba(57,135,229,0.18);
+    --tab: #2bb3a3;
+    --tab-soft: rgba(43,179,163,0.12);
+    --tab-border: rgba(43,179,163,0.35);
     --superfluo: #e17240;
     --superfluo-soft: rgba(225,114,64,0.18);
     --good: #26c526;
@@ -85,7 +91,7 @@
     font-family:var(--font-body);
   }
   .page{
-    max-width:900px;
+    max-width:1040px;
     margin:0 auto;
     padding:20px 16px 48px;
     padding-block:20px 48px;
@@ -129,6 +135,14 @@
     color:var(--text-secondary);
   }
   .tab-btn.active{ background:var(--surface); color:var(--text-primary); box-shadow:var(--shadow); }
+  /* primeira linha com cor própria (verde-petróleo), para se destacar dos filtros */
+  .tabs{ background:var(--tab-soft); border-color:var(--tab-border); }
+  .tab-btn{ color:var(--tab); }
+  .tab-btn.active{ background:var(--tab); color:#fff; }
+  .tab-btn:focus-visible{ outline:2px solid var(--tab); outline-offset:2px; }
+  .tab-import{ display:inline-flex; align-items:center; gap:6px; white-space:nowrap; cursor:pointer; margin-left:6px; border:1.5px solid var(--tab); }
+  .tab-import:hover{ background:var(--tab); color:#fff; }
+  .tab-import:focus-within{ outline:2px solid var(--tab); outline-offset:2px; }
   .tabs{ overflow-x:auto; }
   @media (max-width:640px){ .tab-btn{ padding:8px 10px; font-size:13px; white-space:nowrap; } }
   .tab-panel[hidden]{ display:none; }
@@ -288,20 +302,22 @@
     .month-nav-label{ width:auto; flex:1 1 120px; }
   }
   /* filtros numa linha só: Vencendo/Gastos do mês · Tudo/Cartão/Débito · Lançar despesa */
-  .filtros-row{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:6px; }
+  .filtros-row{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; }
   .view-toggle{
     display:grid; grid-template-columns:auto auto; gap:4px;
     background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:4px;
   }
   .view-btn{
     appearance:none; border:none; background:transparent; cursor:pointer; border-radius:9px;
-    padding:10px 12px; font-size:14px; font-weight:700; color:var(--text-secondary); min-height:42px;
+    padding:9px 11px; font-size:13px; font-weight:700; color:var(--text-secondary); min-height:40px; white-space:nowrap;
   }
   .meio-toggle{ grid-template-columns:repeat(3,auto); }
-  .btn-lancar{ min-height:44px; padding:0 16px; font-size:14px; margin-left:auto; }
+  .btn-lancar{ min-height:42px; padding:0 14px; font-size:13px; white-space:nowrap; }
+  .btn-lancar:not(.btn-lancar-fixo){ margin-left:auto; }
+  .btn-lancar-fixo{ background:var(--fixo); }
   .meio-btn{
     appearance:none; border:none; background:transparent; cursor:pointer; border-radius:9px;
-    padding:10px 12px; font-size:14px; font-weight:700; color:var(--text-secondary); min-height:42px;
+    padding:9px 11px; font-size:13px; font-weight:700; color:var(--text-secondary); min-height:40px; white-space:nowrap;
   }
   .meio-btn[aria-pressed="true"]{ background:var(--surface); color:var(--text-primary); box-shadow:var(--shadow); }
   .lbl-short{ display:none; }
@@ -312,7 +328,6 @@
   .col-meio{ width:118px; }
   .view-btn[aria-pressed="true"]{ background:var(--surface); color:var(--text-primary); box-shadow:var(--shadow); }
   .view-btn:focus-visible{ outline:2px solid var(--fixo); outline-offset:2px; }
-  .view-hint{ font-size:12px; color:var(--text-muted); margin:0 0 12px; }
   @media (max-width:640px){
     .filtros-row{ flex-direction:column; align-items:stretch; }
     .view-toggle{ grid-template-columns:1fr 1fr; }
@@ -336,8 +351,6 @@
     border-radius:8px; padding:8px 10px; font-size:13px; cursor:pointer;
   }
 
-  .btn-import{ display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 12px; font-size:12px; cursor:pointer; white-space:nowrap; }
-  .btn-import:focus-within{ outline:2px solid var(--fixo); outline-offset:2px; }
   #import-area[hidden]{ display:none !important; }
   .import-area-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
   .import-area-head .empty-note{ margin:6px 0; font-weight:600; color:var(--text-secondary); }
@@ -572,6 +585,9 @@
     <button class="tab-btn" data-tab="graficos" role="tab" aria-selected="false">Gráficos</button>
     <button class="tab-btn only-desktop" data-tab="timeline" role="tab" aria-selected="false">Linha do tempo</button>
     <button class="tab-btn only-desktop" data-tab="consultar" role="tab" aria-selected="false">Consultar</button>
+    <label class="tab-btn tab-import only-desktop" for="fatura-file-input" title="Fatura ou extrato em PDF, CSV, OFX ou Excel">⬆ Importar arquivo
+      <input type="file" id="fatura-file-input" accept=".pdf,.csv,.txt,.ofx,.qfx,.xls,.xlsx,application/pdf,text/csv" hidden>
+    </label>
   </nav>
 
   <section id="tab-lancamentos" class="tab-panel">
@@ -586,8 +602,8 @@
         <button type="button" class="meio-btn" data-meio="conta" aria-pressed="false">Débito</button>
       </div>
       <button type="button" class="btn-add btn-lancar only-desktop">＋ Lançar despesa</button>
+      <button type="button" class="btn-add btn-lancar btn-lancar-fixo only-desktop" data-fixo="1">＋ Lançar gasto fixo</button>
     </div>
-    <p class="view-hint"></p>
 
     <div class="month-nav" role="group" aria-label="Navegação de mês">
       <button type="button" id="mes-prev" class="btn-ghost" aria-label="Mês anterior">‹</button>
@@ -595,9 +611,6 @@
       <button type="button" id="mes-next" class="btn-ghost" aria-label="Próximo mês">›</button>
       <button type="button" id="mes-hoje-btn" class="btn-ghost only-desktop">Hoje</button>
       <button type="button" id="mes-limpar-btn" class="btn-ghost only-desktop" title="Excluir todos os lançamentos (fixos e supérfluos) do mês exibido">🗑 Limpar mês</button>
-      <label class="btn-add btn-import only-desktop" for="fatura-file-input" title="Fatura ou extrato em PDF, CSV, OFX ou Excel">⬆ Importar arquivo
-        <input type="file" id="fatura-file-input" accept=".pdf,.csv,.txt,.ofx,.qfx,.xls,.xlsx,application/pdf,text/csv" hidden>
-      </label>
     </div>
 
     <div class="summary-row only-desktop" id="summary-row-1"></div>
@@ -624,7 +637,6 @@
     <div class="expense-card only-desktop">
       <div class="card-head">
         <h2><span class="dot dot-fixo"></span>Gastos fixos</h2>
-        <button class="btn-add" data-tipo="fixo">+ Adicionar gasto fixo</button>
       </div>
       <div class="table-wrap">
         <table class="expense-table">
@@ -663,7 +675,6 @@
         <button type="button" class="meio-btn" data-meio="conta" aria-pressed="false">Débito</button>
       </div>
     </div>
-    <p class="view-hint"></p>
 
     <div class="month-nav-readonly" id="mes-nav-label-graficos">—</div>
     <div class="summary-row" id="summary-row-2"></div>
@@ -1623,11 +1634,6 @@
     if(navLabelGraficos) navLabelGraficos.textContent = (viewMode==="compra" ? "Gastos feitos em " : "Vencendo em ") + label + (isToday ? " (mês atual)" : "");
     document.querySelectorAll(".view-btn").forEach(function(b){ b.setAttribute("aria-pressed", String(b.dataset.mode===viewMode)); });
     document.querySelectorAll(".meio-btn").forEach(function(b){ b.setAttribute("aria-pressed", String(b.dataset.meio===meioFiltro)); });
-    document.querySelectorAll(".view-hint").forEach(function(h){
-      h.textContent = viewMode==="compra"
-        ? "Compras feitas em "+label+", pela data da compra. Parcelas contam no mês de cada parcela."
-        : "Tudo que vence em "+label+" — a fatura do cartão entra inteira, inclusive compras do mês anterior.";
-    });
     var ganhoGastosLabel = document.getElementById("ganho-gastos-mes-label");
     if(ganhoGastosLabel) ganhoGastosLabel.textContent = label;
   }
@@ -1660,9 +1666,9 @@
 
   /* ---------- static UI wiring ---------- */
 
-  document.querySelectorAll(".tab-btn").forEach(function(btn){
+  document.querySelectorAll(".tab-btn[data-tab]").forEach(function(btn){
     btn.addEventListener("click", function(){
-      document.querySelectorAll(".tab-btn").forEach(function(b){ b.classList.remove("active"); b.setAttribute("aria-selected","false"); });
+      document.querySelectorAll(".tab-btn[data-tab]").forEach(function(b){ b.classList.remove("active"); b.setAttribute("aria-selected","false"); });
       btn.classList.add("active"); btn.setAttribute("aria-selected","true");
       document.querySelectorAll(".tab-panel").forEach(function(panel){
         panel.hidden = panel.id !== "tab-"+btn.dataset.tab;
@@ -3051,7 +3057,9 @@
   });
 
   document.getElementById("m-add-btn").addEventListener("click", function(){ abrirLancamento(null); });
-  document.querySelectorAll(".btn-lancar").forEach(function(b){ b.addEventListener("click", function(){ abrirLancamento(null); }); });
+  document.querySelectorAll(".btn-lancar").forEach(function(b){
+    b.addEventListener("click", function(){ abrirLancamento(null, b.dataset.fixo ? { tipo:"fixo" } : null); });
+  });
   document.getElementById("m-list").addEventListener("click", function(e){
     var b = e.target.closest(".m-item");
     if(b) openExpenseForm(b.getAttribute("data-id"));
@@ -3224,8 +3232,8 @@
       .slice(0,8);
   }
 
-  function abrirLancamento(pre){
-    W = { passo:0, categoria:null, desc:"", valor:null, data:null, meio:null, pre: !!pre };
+  function abrirLancamento(pre, opcoes){
+    W = { passo:0, categoria:null, desc:"", valor:null, data:null, meio:null, pre: !!pre, tipo: (opcoes && opcoes.tipo) || null };
     if(pre){ Object.keys(pre).forEach(function(k){ if(pre[k]!=null && pre[k]!=="") W[k] = pre[k]; }); }
     W.passo = proximoPassoVazio(0);
     if(typeof wiz.dlg.showModal==="function") wiz.dlg.showModal(); else wiz.dlg.setAttribute("open","");
@@ -3250,6 +3258,7 @@
 
   function chips(){
     var c = [];
+    if(W.tipo==="fixo") c.push("Gasto fixo");
     if(W.categoria) c.push((CAT_ICONE[W.categoria]||"")+" "+W.categoria);
     if(W.desc) c.push(W.desc);
     if(W.valor>0) c.push(formatMoney(W.valor));
@@ -3265,7 +3274,7 @@
     var b = wiz.body;
 
     if(passo==="categoria"){
-      b.innerHTML = '<h2 class="wiz-q" id="wiz-title">Qual a categoria?</h2>'+
+      b.innerHTML = '<h2 class="wiz-q" id="wiz-title">Qual a categoria?</h2>'+chips()+
         '<input class="wiz-input" id="wiz-busca" type="search" placeholder="Digite para achar…" autocomplete="off" enterkeyhint="go">'+
         '<div class="wiz-grid" id="wiz-cats"></div>';
       var busca = document.getElementById("wiz-busca"), grid = document.getElementById("wiz-cats");
@@ -3389,13 +3398,14 @@
         '</div>'+
         '<button type="button" class="btn-add btn-big" id="wiz-outro">＋ Lançar outra</button>'+
         '<button type="button" class="btn-ghost" id="wiz-fim" style="min-height:48px">Concluir</button>';
-      document.getElementById("wiz-outro").addEventListener("click", function(){ abrirLancamento(null); });
+      var tipoAtual = W.tipo;
+      document.getElementById("wiz-outro").addEventListener("click", function(){ abrirLancamento(null, tipoAtual ? { tipo:tipoAtual } : null); });
       document.getElementById("wiz-fim").addEventListener("click", fecharLancamento);
     }
   }
 
   function salvarLancamento(){
-    var tipo = guessTipo(W.desc, W.categoria);
+    var tipo = W.tipo || guessTipo(W.desc, W.categoria);
     persistNewItems([{
       desc: W.desc, categoria: W.categoria, tipo: tipo, valor: W.valor, isExample:false, createdAt: Date.now(),
       mesRef: mesDoVencimento(W.data, W.meio), parcelaTotal:1, parcelaIndex:1, parcelaGrupo:null,
