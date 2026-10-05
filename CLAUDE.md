@@ -58,8 +58,9 @@ de continuar. Nunca faça force push na `main`.
 - **Dois jeitos de ver o mês:** "Vencendo no mês" (o que vence/é pago no mês — padrão) e "Gastos do
   mês" (pela data da compra). Parcelas contam no mês de cada parcela; gasto sem data fica no mês em
   que vence.
-- **Computador, 1ª linha (verde-petróleo):** abas Lançamentos · Gráficos · Linha do tempo · Consultar e o
-  botão "Importar arquivo", que abre direto a escolha do arquivo.
+- **1ª linha (verde-petróleo):** abas Lançamentos · Gráficos · **Renda** (campo da renda mensal, logo
+  depois de Gráficos, também no celular) · Linha do tempo · Consultar e o botão "Importar arquivo", que
+  abre direto a escolha do arquivo. Não há mais renda no cabeçalho.
 - **Computador, 1ª linha também tem** "Lançar despesa" e "Lançar gasto fixo" (abrem o passo a passo).
 - **Computador, 2ª linha:** Vencendo no mês · Gastos do mês · Tudo · Cartão de crédito · Débito · ‹ mês › ·
   Hoje · Limpar mês. Sem texto explicativo embaixo.
