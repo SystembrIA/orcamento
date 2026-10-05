@@ -287,18 +287,21 @@
     .month-nav{ flex-wrap:wrap; width:auto; }
     .month-nav-label{ width:auto; flex:1 1 120px; }
   }
+  /* filtros numa linha só: Vencendo/Gastos do mês · Tudo/Cartão/Débito · Lançar despesa */
+  .filtros-row{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:6px; }
   .view-toggle{
-    display:grid; grid-template-columns:1fr 1fr; gap:4px; max-width:420px; margin-bottom:6px;
+    display:grid; grid-template-columns:auto auto; gap:4px;
     background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:4px;
   }
   .view-btn{
     appearance:none; border:none; background:transparent; cursor:pointer; border-radius:9px;
     padding:10px 12px; font-size:14px; font-weight:700; color:var(--text-secondary); min-height:42px;
   }
-  .meio-toggle{ grid-template-columns:repeat(3,1fr); margin-bottom:14px; }
+  .meio-toggle{ grid-template-columns:repeat(3,auto); }
+  .btn-lancar{ min-height:44px; padding:0 16px; font-size:14px; margin-left:auto; }
   .meio-btn{
     appearance:none; border:none; background:transparent; cursor:pointer; border-radius:9px;
-    padding:8px 8px; font-size:13px; font-weight:700; color:var(--text-secondary); min-height:38px;
+    padding:10px 12px; font-size:14px; font-weight:700; color:var(--text-secondary); min-height:42px;
   }
   .meio-btn[aria-pressed="true"]{ background:var(--surface); color:var(--text-primary); box-shadow:var(--shadow); }
   .lbl-short{ display:none; }
@@ -309,8 +312,13 @@
   .col-meio{ width:118px; }
   .view-btn[aria-pressed="true"]{ background:var(--surface); color:var(--text-primary); box-shadow:var(--shadow); }
   .view-btn:focus-visible{ outline:2px solid var(--fixo); outline-offset:2px; }
-  .view-hint{ font-size:12px; color:var(--text-muted); margin:0 0 12px; max-width:560px; }
-  @media (max-width:640px){ .view-toggle{ max-width:none; } }
+  .view-hint{ font-size:12px; color:var(--text-muted); margin:0 0 12px; }
+  @media (max-width:640px){
+    .filtros-row{ flex-direction:column; align-items:stretch; }
+    .view-toggle{ grid-template-columns:1fr 1fr; }
+    .meio-toggle{ grid-template-columns:repeat(3,1fr); }
+    .meio-btn{ padding:8px; font-size:13px; }
+  }
   .month-nav-readonly{ font-size:13px; color:var(--text-secondary); margin-bottom:14px; font-weight:600; text-transform:capitalize; }
 
   .col-parcelas{ width:96px; text-align:center; }
@@ -567,16 +575,19 @@
   </nav>
 
   <section id="tab-lancamentos" class="tab-panel">
-    <div class="view-toggle" role="group" aria-label="Quais gastos mostrar">
-      <button type="button" class="view-btn" data-mode="vencimento" aria-pressed="true">Vencendo no mês</button>
-      <button type="button" class="view-btn" data-mode="compra" aria-pressed="false">Gastos do mês</button>
+    <div class="filtros-row">
+      <div class="view-toggle" role="group" aria-label="Quais gastos mostrar">
+        <button type="button" class="view-btn" data-mode="vencimento" aria-pressed="true">Vencendo no mês</button>
+        <button type="button" class="view-btn" data-mode="compra" aria-pressed="false">Gastos do mês</button>
+      </div>
+      <div class="view-toggle meio-toggle" role="group" aria-label="Filtrar por forma de pagamento">
+        <button type="button" class="meio-btn" data-meio="" aria-pressed="true">Tudo</button>
+        <button type="button" class="meio-btn" data-meio="cartao" aria-pressed="false"><span class="lbl-full">Cartão de crédito</span><span class="lbl-short">Cartão</span></button>
+        <button type="button" class="meio-btn" data-meio="conta" aria-pressed="false">Débito</button>
+      </div>
+      <button type="button" class="btn-add btn-lancar only-desktop">＋ Lançar despesa</button>
     </div>
     <p class="view-hint"></p>
-    <div class="view-toggle meio-toggle" role="group" aria-label="Filtrar por forma de pagamento">
-      <button type="button" class="meio-btn" data-meio="" aria-pressed="true">Tudo</button>
-      <button type="button" class="meio-btn" data-meio="cartao" aria-pressed="false"><span class="lbl-full">Cartão de crédito</span><span class="lbl-short">Cartão</span></button>
-      <button type="button" class="meio-btn" data-meio="conta" aria-pressed="false"><span class="lbl-full">Conta corrente</span><span class="lbl-short">Conta</span></button>
-    </div>
 
     <div class="month-nav" role="group" aria-label="Navegação de mês">
       <button type="button" id="mes-prev" class="btn-ghost" aria-label="Mês anterior">‹</button>
@@ -641,16 +652,18 @@
   </section>
 
   <section id="tab-graficos" class="tab-panel" hidden>
-    <div class="view-toggle" role="group" aria-label="Quais gastos mostrar">
-      <button type="button" class="view-btn" data-mode="vencimento" aria-pressed="true">Vencendo no mês</button>
-      <button type="button" class="view-btn" data-mode="compra" aria-pressed="false">Gastos do mês</button>
+    <div class="filtros-row">
+      <div class="view-toggle" role="group" aria-label="Quais gastos mostrar">
+        <button type="button" class="view-btn" data-mode="vencimento" aria-pressed="true">Vencendo no mês</button>
+        <button type="button" class="view-btn" data-mode="compra" aria-pressed="false">Gastos do mês</button>
+      </div>
+      <div class="view-toggle meio-toggle" role="group" aria-label="Filtrar por forma de pagamento">
+        <button type="button" class="meio-btn" data-meio="" aria-pressed="true">Tudo</button>
+        <button type="button" class="meio-btn" data-meio="cartao" aria-pressed="false"><span class="lbl-full">Cartão de crédito</span><span class="lbl-short">Cartão</span></button>
+        <button type="button" class="meio-btn" data-meio="conta" aria-pressed="false">Débito</button>
+      </div>
     </div>
     <p class="view-hint"></p>
-    <div class="view-toggle meio-toggle" role="group" aria-label="Filtrar por forma de pagamento">
-      <button type="button" class="meio-btn" data-meio="" aria-pressed="true">Tudo</button>
-      <button type="button" class="meio-btn" data-meio="cartao" aria-pressed="false"><span class="lbl-full">Cartão de crédito</span><span class="lbl-short">Cartão</span></button>
-      <button type="button" class="meio-btn" data-meio="conta" aria-pressed="false"><span class="lbl-full">Conta corrente</span><span class="lbl-short">Conta</span></button>
-    </div>
 
     <div class="month-nav-readonly" id="mes-nav-label-graficos">—</div>
     <div class="summary-row" id="summary-row-2"></div>
@@ -706,7 +719,7 @@
         <select id="q-meio" class="consulta-input">
           <option value="">Cartão e conta</option>
           <option value="cartao">Só cartão de crédito</option>
-          <option value="conta">Só conta corrente</option>
+          <option value="conta">Só débito (conta corrente)</option>
         </select>
         <select id="q-tipo" class="consulta-input">
           <option value="">Fixos e supérfluos</option>
@@ -872,8 +885,8 @@
 
   // Forma de pagamento de cada gasto: "cartao" (fatura do cartão) ou "conta" (extrato da conta
   // corrente); "outro" para dinheiro etc. Lançamentos antigos sem o campo: fatura vira cartão.
-  var MEIO_LABEL = { cartao:"Cartão de crédito", conta:"Conta corrente", outro:"Dinheiro / outro" };
-  var MEIO_CURTO = { cartao:"Cartão", conta:"Conta", outro:"Outro" };
+  var MEIO_LABEL = { cartao:"Cartão de crédito", conta:"Débito (conta corrente)", outro:"Dinheiro / outro" };
+  var MEIO_CURTO = { cartao:"Cartão", conta:"Débito", outro:"Outro" };
   function meioOf(it){
     if(it.meio) return it.meio;
     return /^fatura/i.test(it.origem||"") ? "cartao" : "";
@@ -3038,6 +3051,7 @@
   });
 
   document.getElementById("m-add-btn").addEventListener("click", function(){ abrirLancamento(null); });
+  document.querySelectorAll(".btn-lancar").forEach(function(b){ b.addEventListener("click", function(){ abrirLancamento(null); }); });
   document.getElementById("m-list").addEventListener("click", function(e){
     var b = e.target.closest(".m-item");
     if(b) openExpenseForm(b.getAttribute("data-id"));
