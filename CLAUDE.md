@@ -61,6 +61,9 @@ de continuar. Nunca faça force push na `main`.
 - **1ª linha (verde-petróleo):** abas Lançamentos · Gráficos · **Renda** (campo da renda mensal, logo
   depois de Gráficos, também no celular) · Linha do tempo · Consultar e o botão "Importar arquivo", que
   abre direto a escolha do arquivo. Não há mais renda no cabeçalho.
+- **Botões uniformes:** os botões da 1ª linha têm o mesmo tamanho dos da 2ª (40px de altura, fonte 13px
+  em negrito); no celular a 1ª linha ocupa a largura toda. **Campos de digitação com fonte de no mínimo
+  16px** (senão o iPhone dá zoom ao tocar e não volta) — não bloquear o zoom pela tag viewport.
 - **Computador, 1ª linha também tem** "Lançar despesa" e "Lançar gasto fixo" (abrem o passo a passo).
 - **Computador, 2ª linha:** Vencendo no mês · Gastos do mês · Tudo · Cartão de crédito · Débito · ‹ mês › ·
   Hoje · Limpar mês. Sem texto explicativo embaixo.
