@@ -58,10 +58,10 @@ de continuar. Nunca faça force push na `main`.
 - **Dois jeitos de ver o mês:** "Vencendo no mês" (o que vence/é pago no mês — padrão) e "Gastos do
   mês" (pela data da compra). Parcelas contam no mês de cada parcela; gasto sem data fica no mês em
   que vence.
-- **1ª linha (verde-petróleo):** abas Lançamentos · Gráficos · **Renda** (botão logo depois de Gráficos,
-  também no celular, mostrando o total de entradas do mês) · Linha do tempo · Consultar e o botão
+- **1ª linha (verde-petróleo):** abas Lançamentos · Gráficos · **"＋ Entrada"** (botão azul logo depois de
+  Gráficos, também no celular; no computador mostra o total de entradas do mês) · Linha do tempo · Consultar e o botão
   "Importar arquivo", que abre direto a escolha do arquivo. Não há mais renda no cabeçalho.
-- **Renda = entradas lançadas** (salário, mesada, Pix recebido…): o botão "Renda" (e "＋ Lançar entrada")
+- **Renda = entradas lançadas** (salário, mesada, Pix recebido…): o botão azul "＋ Entrada" (e o "＋ Lançar entrada", também azul)
   abre o mesmo passo a passo dos lançamentos — nome → valor → data → "Só este mês" ou "Todo mês"
   (repete 24 meses, `recorrente`/`recGrupo`, com "parar"). Ficam em `orcamento/config/entradas`
   (nunca apagadas ao zerar a base) e contam no mês da data. O antigo `config.renda` não é mais usado.

@@ -115,11 +115,14 @@
     min-height:40px; box-sizing:border-box;
   }
   .renda-tab{ appearance:none; cursor:pointer; font-family:inherit; }
-  .renda-tab b{ color:var(--text-primary); font-variant-numeric:tabular-nums; }
-  .renda-tab:hover{ background:var(--tab-soft); }
+  /* botão "+ Entrada" em azul */
+  .tabs .renda-tab{ background:var(--fixo); border-color:var(--fixo); color:#fff; }
+  .renda-tab b{ color:#fff; font-variant-numeric:tabular-nums; font-weight:600; opacity:0.9; }
+  .tabs .renda-tab:hover{ filter:brightness(1.08); }
   .renda-tab:focus-visible{ outline:2px solid var(--tab); outline-offset:2px; }
   @media (max-width:640px){
     .renda-tab{ padding:0 8px; gap:4px; }
+    .renda-tab b{ display:none; }
     .tabs .tab-btn{ padding:8px 9px; }
     /* no celular a linha ocupa a largura toda, igual às linhas de baixo */
     .topo-row nav.tabs{ width:100%; }
@@ -188,7 +191,7 @@
   .fecho-linha.saldo.is-good > b{ color:var(--good); }
   .fecho-linha.saldo.is-bad > b{ color:var(--critical); }
   .fecho-nota{ font-size:12px; color:var(--text-muted); margin:2px 0 6px; }
-  .btn-add.btn-entrada{ background:var(--good); min-height:44px; padding:0 14px; font-size:14px; font-weight:700; justify-self:start; margin-top:8px; }
+  .btn-add.btn-entrada{ background:var(--fixo); min-height:44px; padding:0 14px; font-size:14px; font-weight:700; justify-self:start; margin-top:8px; }
   .m-group .fecho{ border-top:none; margin:0; padding:12px 14px; }
   .m-group .btn-add.btn-entrada{ justify-self:stretch; min-height:50px; }
   .tile{
@@ -630,7 +633,7 @@
   <nav class="tabs" role="tablist">
     <button class="tab-btn active" data-tab="lancamentos" role="tab" aria-selected="true">Lançamentos</button>
     <button class="tab-btn" data-tab="graficos" role="tab" aria-selected="false">Gráficos</button>
-    <button type="button" class="renda-tab" id="renda-btn" title="Lançar uma entrada (salário, mesada, Pix recebido…)">Renda <b id="renda-total">R$ 0</b></button>
+    <button type="button" class="renda-tab" id="renda-btn" title="Lançar uma entrada (salário, mesada, Pix recebido…)">＋ Entrada <b id="renda-total">R$ 0</b></button>
     <button class="tab-btn only-desktop" data-tab="timeline" role="tab" aria-selected="false">Linha do tempo</button>
     <button class="tab-btn only-desktop" data-tab="consultar" role="tab" aria-selected="false">Consultar</button>
     <label class="tab-btn tab-import only-desktop" for="fatura-file-input" title="Fatura ou extrato em PDF, CSV, OFX ou Excel">⬆ Importar arquivo
