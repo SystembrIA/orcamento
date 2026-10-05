@@ -4,6 +4,12 @@ Painel de controle de gastos do Pedro, publicado em https://systembria.github.io
 Quem pede as mudanças é o Michael (dono). Responda sempre em português, em linguagem simples,
 sem jargão técnico.
 
+## Acesso
+
+O painel abre pelo hub (repositório `SystembrIA/hub`), no atalho "Conciliação Financeira", que
+aparece só para os logins `justadm` (Michael) e `pedro` (Pedro Henrique, filho dele). No painel,
+entram administradores e os logins da lista `USUARIOS_OK` no topo do `index.html`.
+
 ## Publicação: faça tudo sozinho (autorizado pelo Michael)
 
 O Michael autorizou que as mudanças sejam publicadas **sem pedir confirmação**. Em cada pedido:
