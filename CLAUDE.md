@@ -60,9 +60,14 @@ de continuar. Nunca faça force push na `main`.
   que vence.
 - **Computador, 1ª linha (verde-petróleo):** abas Lançamentos · Gráficos · Linha do tempo · Consultar e o
   botão "Importar arquivo", que abre direto a escolha do arquivo.
-- **Computador, 2ª linha:** Vencendo no mês · Gastos do mês · Tudo · Cartão de crédito · Débito, e os
-  botões "Lançar despesa" e "Lançar gasto fixo" (abrem o passo a passo do celular; o segundo grava
-  como fixo). Sem texto explicativo embaixo.
+- **Computador, 1ª linha também tem** "Lançar despesa" e "Lançar gasto fixo" (abrem o passo a passo).
+- **Computador, 2ª linha:** Vencendo no mês · Gastos do mês · Tudo · Cartão de crédito · Débito · ‹ mês › ·
+  Hoje · Limpar mês. Sem texto explicativo embaixo.
+- **Lista:** uma só, "Lançamentos", em ordem de data, com coluna Tipo (Fixo/Supérfluo) — no celular
+  também uma lista só.
+- **Gasto fixo** (botão "Lançar gasto fixo") repete todo mês no mesmo dia e valor, gravado para 24
+  meses (`recorrente`, `recGrupo`); "parar" na coluna Parcelas (ou "Parar de repetir" no celular)
+  apaga os meses seguintes.
 - **Celular (até 640px):** só as abas Lançamentos e Gráficos, a troca de mês, o botão grande
   "Novo lançamento" e a lista em cartões. O "Novo lançamento" é um passo a passo em tela cheia, um
   campo por tela: categoria (cartões, filtra ao digitar, mais usadas primeiro) → nome (sugere os

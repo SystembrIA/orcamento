@@ -91,7 +91,7 @@
     font-family:var(--font-body);
   }
   .page{
-    max-width:1040px;
+    max-width:1200px;
     margin:0 auto;
     padding:20px 16px 48px;
     padding-block:20px 48px;
@@ -127,11 +127,13 @@
 
   .tabs{
     display:flex; gap:4px; background:var(--surface-2); border:1px solid var(--border);
-    border-radius:12px; padding:4px; margin-bottom:20px; width:max-content; max-width:100%;
+    border-radius:12px; padding:4px; width:max-content; max-width:100%;
   }
+  /* 1ª linha: abas + Importar + Lançar despesa + Lançar gasto fixo */
+  .topo-row{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:16px; }
   .tab-btn{
     appearance:none; border:none; background:transparent; cursor:pointer;
-    padding:9px 18px; border-radius:9px; font-size:14px; font-weight:600;
+    padding:9px 14px; border-radius:9px; font-size:14px; font-weight:600; white-space:nowrap;
     color:var(--text-secondary);
   }
   .tab-btn.active{ background:var(--surface); color:var(--text-primary); box-shadow:var(--shadow); }
@@ -192,7 +194,15 @@
   .btn-add:hover{ opacity:0.88; }
 
   .table-wrap{ overflow-x:auto; }
-  table.expense-table{ width:100%; border-collapse:collapse; min-width:780px; }
+  table.expense-table{ width:100%; border-collapse:collapse; min-width:880px; }
+  .col-tipo{ width:132px; }
+  .input-tipo{ width:100%; border:1px solid transparent; background:transparent; border-radius:8px; padding:7px 4px; font-size:13px; font-weight:600; cursor:pointer; }
+  .input-tipo:hover{ border-color:var(--border); }
+  .input-tipo.is-fixo{ color:var(--fixo); }
+  .input-tipo.is-superfluo{ color:var(--superfluo); }
+  .rec-tag{ display:inline-flex; align-items:center; gap:4px; font-size:12px; font-weight:600; color:var(--text-secondary); }
+  .rec-stop{ appearance:none; border:1px solid var(--border); background:var(--surface); border-radius:6px; font-size:11px; padding:2px 6px; cursor:pointer; color:var(--text-secondary); }
+  .rec-stop:hover{ border-color:var(--critical); color:var(--critical); }
   .col-data{ width:138px; }
   .input-data{
     width:100%; border:1px solid transparent; background:transparent; border-radius:8px;
@@ -297,6 +307,10 @@
   .month-nav-label{ font-weight:700; font-size:14px; width:216px; text-align:center; text-transform:capitalize; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .month-nav .btn-ghost{ height:32px; display:flex; align-items:center; justify-content:center; }
   .month-nav #mes-prev, .month-nav #mes-next{ width:32px; padding:0; font-size:16px; line-height:1; }
+  /* mês dentro da 2ª linha, ao lado do Débito: mais compacto */
+  .filtros-row .month-nav{ margin-bottom:0; padding:5px 6px; gap:6px; box-shadow:none; background:var(--surface-2); }
+  .filtros-row .month-nav-label{ width:auto; min-width:120px; font-size:13px; padding:0 4px; }
+  @media (min-width:641px){ .filtros-row .mes-atual{ display:none; } }
   @media (max-width:640px){
     .month-nav{ flex-wrap:wrap; width:auto; }
     .month-nav-label{ width:auto; flex:1 1 120px; }
@@ -313,7 +327,6 @@
   }
   .meio-toggle{ grid-template-columns:repeat(3,auto); }
   .btn-lancar{ min-height:42px; padding:0 14px; font-size:13px; white-space:nowrap; }
-  .btn-lancar:not(.btn-lancar-fixo){ margin-left:auto; }
   .btn-lancar-fixo{ background:var(--fixo); }
   .meio-btn{
     appearance:none; border:none; background:transparent; cursor:pointer; border-radius:9px;
@@ -580,6 +593,7 @@
     </div>
   </header>
 
+  <div class="topo-row">
   <nav class="tabs" role="tablist">
     <button class="tab-btn active" data-tab="lancamentos" role="tab" aria-selected="true">Lançamentos</button>
     <button class="tab-btn" data-tab="graficos" role="tab" aria-selected="false">Gráficos</button>
@@ -589,6 +603,9 @@
       <input type="file" id="fatura-file-input" accept=".pdf,.csv,.txt,.ofx,.qfx,.xls,.xlsx,application/pdf,text/csv" hidden>
     </label>
   </nav>
+  <button type="button" class="btn-add btn-lancar only-desktop">＋ Lançar despesa</button>
+  <button type="button" class="btn-add btn-lancar btn-lancar-fixo only-desktop" data-fixo="1">＋ Lançar gasto fixo</button>
+  </div>
 
   <section id="tab-lancamentos" class="tab-panel">
     <div class="filtros-row">
@@ -601,16 +618,13 @@
         <button type="button" class="meio-btn" data-meio="cartao" aria-pressed="false"><span class="lbl-full">Cartão de crédito</span><span class="lbl-short">Cartão</span></button>
         <button type="button" class="meio-btn" data-meio="conta" aria-pressed="false">Débito</button>
       </div>
-      <button type="button" class="btn-add btn-lancar only-desktop">＋ Lançar despesa</button>
-      <button type="button" class="btn-add btn-lancar btn-lancar-fixo only-desktop" data-fixo="1">＋ Lançar gasto fixo</button>
-    </div>
-
-    <div class="month-nav" role="group" aria-label="Navegação de mês">
-      <button type="button" id="mes-prev" class="btn-ghost" aria-label="Mês anterior">‹</button>
-      <div class="month-nav-label" id="mes-nav-label">—</div>
-      <button type="button" id="mes-next" class="btn-ghost" aria-label="Próximo mês">›</button>
-      <button type="button" id="mes-hoje-btn" class="btn-ghost only-desktop">Hoje</button>
-      <button type="button" id="mes-limpar-btn" class="btn-ghost only-desktop" title="Excluir todos os lançamentos (fixos e supérfluos) do mês exibido">🗑 Limpar mês</button>
+      <div class="month-nav" role="group" aria-label="Navegação de mês">
+        <button type="button" id="mes-prev" class="btn-ghost" aria-label="Mês anterior">‹</button>
+        <div class="month-nav-label" id="mes-nav-label">—</div>
+        <button type="button" id="mes-next" class="btn-ghost" aria-label="Próximo mês">›</button>
+        <button type="button" id="mes-hoje-btn" class="btn-ghost only-desktop">Hoje</button>
+        <button type="button" id="mes-limpar-btn" class="btn-ghost only-desktop" title="Excluir todos os lançamentos (fixos e supérfluos) do mês exibido">🗑 Limpar mês</button>
+      </div>
     </div>
 
     <div class="summary-row only-desktop" id="summary-row-1"></div>
@@ -636,27 +650,13 @@
 
     <div class="expense-card only-desktop">
       <div class="card-head">
-        <h2><span class="dot dot-fixo"></span>Gastos fixos</h2>
+        <h2>Lançamentos</h2>
       </div>
       <div class="table-wrap">
         <table class="expense-table">
-          <thead><tr><th class="col-data">Data</th><th>Descrição</th><th>Categoria</th><th class="col-meio">Pago com</th><th class="col-valor">Valor</th><th class="col-parcelas">Parcelas</th><th></th></tr></thead>
-          <tbody id="tbody-fixo"></tbody>
-          <tfoot><tr><td colspan="4">Total gastos fixos</td><td class="col-valor" id="total-fixo-cell">R$ 0,00</td><td></td><td></td></tr></tfoot>
-        </table>
-      </div>
-    </div>
-
-    <div class="expense-card only-desktop">
-      <div class="card-head">
-        <h2><span class="dot dot-superfluo"></span>Gastos supérfluos</h2>
-        <button class="btn-add" data-tipo="superfluo">+ Adicionar gasto supérfluo</button>
-      </div>
-      <div class="table-wrap">
-        <table class="expense-table">
-          <thead><tr><th class="col-data">Data</th><th>Descrição</th><th>Categoria</th><th class="col-meio">Pago com</th><th class="col-valor">Valor</th><th class="col-parcelas">Parcelas</th><th></th></tr></thead>
-          <tbody id="tbody-superfluo"></tbody>
-          <tfoot><tr><td colspan="4">Total gastos supérfluos</td><td class="col-valor" id="total-superfluo-cell">R$ 0,00</td><td></td><td></td></tr></tfoot>
+          <thead><tr><th class="col-data">Data</th><th>Descrição</th><th>Categoria</th><th class="col-tipo">Tipo</th><th class="col-meio">Pago com</th><th class="col-valor">Valor</th><th class="col-parcelas">Parcelas</th><th></th></tr></thead>
+          <tbody id="tbody-lanc"></tbody>
+          <tfoot><tr><td colspan="5">Total do mês</td><td class="col-valor" id="total-mes-cell">R$ 0,00</td><td></td><td></td></tr></tfoot>
         </table>
       </div>
     </div>
@@ -809,6 +809,7 @@
       <p class="fld-erro" id="m-erro" role="alert"></p>
       <div class="sheet-actions">
         <button type="button" class="btn-danger" id="m-del" hidden>Excluir</button>
+        <button type="button" class="btn-danger" id="m-parar" hidden>Parar de repetir</button>
         <button type="submit" class="btn-add btn-big" id="m-save">Salvar despesa</button>
       </div>
     </form>
@@ -1097,6 +1098,7 @@
   }
 
   function parcelasCellHtml(item){
+    if(item.recorrente) return '<span class="rec-tag" title="Gasto fixo que se repete todo mês">mensal <button type="button" class="rec-stop" title="Parar de repetir: apaga os próximos meses">parar</button></span>';
     var total = Number(item.parcelaTotal)||1;
     if(total>1){
       var idx = Number(item.parcelaIndex)||1;
@@ -1112,7 +1114,7 @@
   }
 
   function createRow(item){
-    var tbody = document.getElementById(item.tipo==="fixo" ? "tbody-fixo" : "tbody-superfluo");
+    var tbody = document.getElementById("tbody-lanc");
     if(!tbody) return;
     var tr = document.createElement("tr");
     tr.setAttribute("data-id", item.id);
@@ -1120,6 +1122,9 @@
       '<td class="col-data"><input class="input-data" type="date" value="'+escapeAttr(item.data||"")+'" title="Data do gasto"></td>' +
       '<td><input class="input-desc" type="text" placeholder="Ex.: Aluguel" value="'+escapeAttr(item.desc)+'"></td>' +
       '<td><select class="input-categoria">'+categoriaOptions(item.categoria)+'</select></td>' +
+      '<td class="col-tipo"><select class="input-tipo '+(item.tipo==="fixo"?"is-fixo":"is-superfluo")+'" title="Fixo ou supérfluo">'+
+        '<option value="fixo"'+(item.tipo==="fixo"?" selected":"")+'>Fixo</option>'+
+        '<option value="superfluo"'+(item.tipo!=="fixo"?" selected":"")+'>Supérfluo</option></select></td>' +
       '<td class="col-meio"><select class="input-meio" title="Pago com">'+meioOptions(meioOf(item))+'</select></td>' +
       '<td class="col-valor"><div class="money-input small"><span>R$</span><input class="input-valor" type="number" min="0" step="0.01" value="'+(Number(item.valor)||0)+'"></div></td>' +
       '<td class="col-parcelas">'+parcelasCellHtml(item)+'</td>' +
@@ -1132,6 +1137,15 @@
     var valorInput = tr.querySelector(".input-valor");
     var parcelasInput = tr.querySelector(".input-parcelas");
     var delBtn = tr.querySelector(".btn-del");
+    var tipoSelect = tr.querySelector(".input-tipo");
+    tipoSelect.addEventListener("change", function(){
+      tipoSelect.className = "input-tipo "+(tipoSelect.value==="fixo" ? "is-fixo" : "is-superfluo");
+      store.updateItem(item.id, { tipo: tipoSelect.value });
+      var it = STATE.items.find(function(x){ return x.id===item.id; });
+      if(it && (it.descOriginal || it.desc)) learnMerchantRule(it.descOriginal || it.desc, it.categoria, tipoSelect.value);
+    });
+    var stopBtn = tr.querySelector(".rec-stop");
+    if(stopBtn) stopBtn.addEventListener("click", function(){ pararDeRepetir(item.id); });
     var meioSelect = tr.querySelector(".input-meio");
     meioSelect.addEventListener("change", function(){ store.updateItem(item.id, { meio: meioSelect.value || null }); });
 
@@ -1578,8 +1592,7 @@
     var totals = computeTotals();
     renderSummaryInto("summary-row-1", totals);
     renderSummaryInto("summary-row-2", totals);
-    document.getElementById("total-fixo-cell").textContent = formatMoney(totals.fixo);
-    document.getElementById("total-superfluo-cell").textContent = formatMoney(totals.superfluo);
+    document.getElementById("total-mes-cell").textContent = formatMoney(totals.total);
     renderGanhoGastos(totals);
     renderSplit(totals);
     renderTop();
@@ -1629,7 +1642,7 @@
     var label = mesLabelOf(currentViewMonth);
     var isToday = viewedMonthKey() === mesKeyOf(new Date());
     var navLabel = document.getElementById("mes-nav-label");
-    if(navLabel) navLabel.textContent = label + (isToday ? " (atual)" : "");
+    if(navLabel) navLabel.innerHTML = escapeXml(label) + (isToday ? '<span class="mes-atual"> (atual)</span>' : "");
     var navLabelGraficos = document.getElementById("mes-nav-label-graficos");
     if(navLabelGraficos) navLabelGraficos.textContent = (viewMode==="compra" ? "Gastos feitos em " : "Vencendo em ") + label + (isToday ? " (mês atual)" : "");
     document.querySelectorAll(".view-btn").forEach(function(b){ b.setAttribute("aria-pressed", String(b.dataset.mode===viewMode)); });
@@ -1639,10 +1652,8 @@
   }
 
   function refreshMonthView(){
-    var tbodyFixo = document.getElementById("tbody-fixo");
-    var tbodySuperfluo = document.getElementById("tbody-superfluo");
-    if(tbodyFixo) tbodyFixo.innerHTML = "";
-    if(tbodySuperfluo) tbodySuperfluo.innerHTML = "";
+    var tbodyLanc = document.getElementById("tbody-lanc");
+    if(tbodyLanc) tbodyLanc.innerHTML = "";
     rowsById = {};
     itemsForViewedMonth()
       .sort(function(a,b){
@@ -1706,16 +1717,6 @@
       (futuras.length ? " e as "+futuras.length+" parcela(s) futura(s) deles nos meses seguintes" : "")+"? Depois você pode importar os arquivos de novo. Essa ação não pode ser desfeita.");
     if(!ok) return;
     store.deleteItems(itemsDoMes.concat(futuras).map(function(it){ return it.id; }));
-  });
-
-  document.querySelectorAll(".btn-add[data-tipo]").forEach(function(btn){
-    btn.addEventListener("click", function(){
-      var id = store.addItem(btn.dataset.tipo);
-      requestAnimationFrame(function(){
-        var row = rowsById[id];
-        if(row) row.descInput.focus();
-      });
-    });
   });
 
   document.getElementById("clear-examples-btn").addEventListener("click", function(){ store.clearExamples(); });
@@ -2910,28 +2911,26 @@
       if(da!==dbb) return da<dbb ? 1 : -1;
       return (b.createdAt||0)-(a.createdAt||0);
     });
-    var total = 0;
-    var html = [["fixo","Gastos fixos"],["superfluo","Gastos supérfluos"]].map(function(g){
-      var list = items.filter(function(it){ return g[0]==="fixo" ? it.tipo==="fixo" : it.tipo!=="fixo"; });
-      var sub = list.reduce(function(sum, it){ return sum+(Number(it.valor)||0); }, 0);
-      total += sub;
-      var rows = list.map(function(it){
+    var total = items.reduce(function(sum, it){ return sum+(Number(it.valor)||0); }, 0);
+    var html = [1].map(function(){
+      var rows = items.map(function(it){
         var v = Number(it.valor)||0;
-        var meta = [it.categoria||"Outros"];
+        var meta = [it.categoria||"Outros", it.tipo==="fixo" ? "Fixo" : "Supérfluo"];
         if(meioOf(it)) meta.push(MEIO_CURTO[meioOf(it)]);
         if(it.data) meta.push(formatIsoBR(it.data).slice(0,5));
         if((Number(it.parcelaTotal)||1)>1) meta.push("parcela "+it.parcelaIndex+"/"+it.parcelaTotal);
+        if(it.recorrente) meta.push("mensal");
         return '<li><button type="button" class="m-item" data-id="'+escapeAttr(it.id)+'" aria-label="'+escapeAttr((it.desc||"Sem descrição")+", "+formatMoney(v)+", editar")+'">'+
           '<span class="m-item-main"><span class="m-item-desc">'+escapeXml(it.desc||"(sem descrição)")+'</span>'+
           '<span class="m-item-sub">'+escapeXml(meta.join(" · "))+'</span></span>'+
           '<span class="m-item-valor'+(v<0?" is-credit":"")+'">'+formatMoney(v)+'</span></button></li>';
       }).join("");
-      return '<section class="m-group"><div class="m-group-head"><span class="dot dot-'+g[0]+'"></span>'+g[1]+
-        '<span class="m-group-total">'+formatMoney(sub)+'</span></div>'+
-        (rows ? '<ul class="m-list-ul">'+rows+'</ul>' : '<p class="m-empty">Nenhum gasto '+(g[0]==="fixo"?"fixo":"supérfluo")+' neste mês.</p>')+
+      return '<section class="m-group"><div class="m-group-head">Lançamentos'+
+        '<span class="m-group-total">'+formatMoney(total)+'</span></div>'+
+        (rows ? '<ul class="m-list-ul">'+rows+'</ul>' : '<p class="m-empty">Nenhum lançamento neste mês.</p>')+
         '</section>';
     }).join("");
-    el.innerHTML = html + '<div class="m-total"><span>Total do mês</span><span>'+formatMoney(total)+'</span></div>';
+    el.innerHTML = html;
   }
 
   var mForm = {
@@ -2983,6 +2982,7 @@
     mForm.parc.value = emGrupo ? it.parcelaTotal : 1;
     mForm.parcHint.textContent = emGrupo ? ("Parcela "+it.parcelaIndex+" de "+it.parcelaTotal+" — o que você mudar aqui vale só para esta parcela.") : "";
     mForm.del.hidden = !it;
+    document.getElementById("m-parar").hidden = !(it && it.recorrente);
     var ultimoMeio = "cartao";
     try{ ultimoMeio = localStorage.getItem("orcamento-ultimo-meio") || "cartao"; } catch(e){}
     mForm.meio.value = it ? (meioOf(it) || "outro") : (meioFiltro || ultimoMeio);
@@ -3044,6 +3044,12 @@
     learnMerchantRule(desc, categoria, tipo);
     closeExpenseForm();
     refreshMonthView();
+  });
+
+  document.getElementById("m-parar").addEventListener("click", function(){
+    if(!mForm.editId) return;
+    closeExpenseForm();
+    pararDeRepetir(mForm.editId);
   });
 
   mForm.del.addEventListener("click", function(){
@@ -3395,6 +3401,7 @@
           '<div>'+(CAT_ICONE[W.categoria]||"")+' '+escapeXml(W.categoria)+' · <b>'+escapeXml(W.desc)+'</b></div>'+
           '<div><b>'+formatMoney(W.valor)+'</b> · '+formatIsoBR(W.data)+' · '+(W.meio==="cartao" ? "Cartão de crédito" : "Conta corrente")+'</div>'+
           (W.meio==="cartao" ? '<div class="m-item-sub">Entra na fatura que vence em '+escapeXml(mesLabelOf(isoToDate(mesV+"-01")))+'.</div>' : '')+
+          (W.tipo==="fixo" ? '<div class="m-item-sub">Gasto fixo: repete todo mês, dia '+isoToDate(W.data).getDate()+', com o mesmo valor.</div>' : '')+
         '</div>'+
         '<button type="button" class="btn-add btn-big" id="wiz-outro">＋ Lançar outra</button>'+
         '<button type="button" class="btn-ghost" id="wiz-fim" style="min-height:48px">Concluir</button>';
@@ -3404,13 +3411,44 @@
     }
   }
 
+  // Gasto fixo lançado pelo botão "Lançar gasto fixo": repete todo mês no mesmo dia e com o mesmo
+  // valor, já gravado para os próximos MESES_GASTO_FIXO meses (dá para parar quando quiser).
+  var MESES_GASTO_FIXO = 24;
+  function datasMensais(dataIso, n){
+    var d0 = isoToDate(dataIso), dia = d0.getDate(), out = [];
+    for(var k=0;k<n;k++){
+      var ultimo = new Date(d0.getFullYear(), d0.getMonth()+k+1, 0).getDate();
+      out.push(isoDe(new Date(d0.getFullYear(), d0.getMonth()+k, Math.min(dia, ultimo))));
+    }
+    return out;
+  }
+
+  function pararDeRepetir(id){
+    var it = STATE.items.find(function(x){ return x.id===id; });
+    if(!it || !it.recGrupo) return;
+    var base = String(it.data||"");
+    var futuros = STATE.items.filter(function(x){ return x.recGrupo===it.recGrupo && String(x.data||"") > base; });
+    if(!window.confirm('Parar de repetir "'+(it.desc||"")+'"? Os '+futuros.length+' lançamento(s) dos meses seguintes serão apagados; este mês fica.')) return;
+    store.deleteItems(futuros.map(function(x){ return x.id; }));
+    store.updateItem(it.id, { recorrente:false });
+    it.recorrente = false;
+    refreshMonthView();
+  }
+
   function salvarLancamento(){
     var tipo = W.tipo || guessTipo(W.desc, W.categoria);
-    persistNewItems([{
-      desc: W.desc, categoria: W.categoria, tipo: tipo, valor: W.valor, isExample:false, createdAt: Date.now(),
-      mesRef: mesDoVencimento(W.data, W.meio), parcelaTotal:1, parcelaIndex:1, parcelaGrupo:null,
-      data: W.data, origem:"manual", meio: W.meio
-    }]);
+    var repete = W.tipo==="fixo";
+    var grupo = repete ? ("rec-"+Date.now()+"-"+Math.random().toString(36).slice(2,7)) : null;
+    var datas = repete ? datasMensais(W.data, MESES_GASTO_FIXO) : [W.data];
+    persistNewItems(datas.map(function(dt, k){
+      var pl = {
+        desc: W.desc, categoria: W.categoria, tipo: tipo, valor: W.valor, isExample:false, createdAt: Date.now()+k,
+        mesRef: mesDoVencimento(dt, W.meio), parcelaTotal:1, parcelaIndex:1, parcelaGrupo:null,
+        data: dt, origem:"manual", meio: W.meio
+      };
+      if(repete){ pl.recorrente = true; pl.recGrupo = grupo; }
+      return pl;
+    }));
     learnMerchantRule(W.desc, W.categoria, tipo);
     try{ localStorage.setItem("orcamento-ultimo-meio", W.meio); } catch(e){}
     W.salvo = true;
