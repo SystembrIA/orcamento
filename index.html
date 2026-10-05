@@ -453,6 +453,8 @@
     display:flex; align-items:center; justify-content:center; gap:8px; width:100%;
     min-height:54px; font-size:16px; border-radius:14px; margin-bottom:16px;
   }
+  .m-acoes{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .m-acoes .btn-big{ font-size:15px; padding:0 8px; text-align:center; line-height:1.2; }
   .m-group{ background:var(--surface); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow); margin-bottom:14px; overflow:hidden; }
   .m-group-head{
     display:flex; align-items:center; gap:8px; padding:12px 14px; font-family:var(--font-display);
@@ -630,7 +632,10 @@
     <div class="summary-row only-desktop" id="summary-row-1"></div>
 
     <div class="only-mobile">
-      <button type="button" class="btn-add btn-big" id="m-add-btn">＋ Novo lançamento</button>
+      <div class="m-acoes">
+        <button type="button" class="btn-add btn-big" id="m-add-btn">＋ Lançar despesa</button>
+        <button type="button" class="btn-add btn-big btn-lancar-fixo" id="m-add-fixo-btn">＋ Lançar gasto fixo</button>
+      </div>
       <div id="m-list"></div>
     </div>
 
@@ -3063,6 +3068,7 @@
   });
 
   document.getElementById("m-add-btn").addEventListener("click", function(){ abrirLancamento(null); });
+  document.getElementById("m-add-fixo-btn").addEventListener("click", function(){ abrirLancamento(null, { tipo:"fixo" }); });
   document.querySelectorAll(".btn-lancar").forEach(function(b){
     b.addEventListener("click", function(){ abrirLancamento(null, b.dataset.fixo ? { tipo:"fixo" } : null); });
   });
