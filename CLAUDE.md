@@ -58,9 +58,17 @@ de continuar. Nunca faça force push na `main`.
 - **Dois jeitos de ver o mês:** "Vencendo no mês" (o que vence/é pago no mês — padrão) e "Gastos do
   mês" (pela data da compra). Parcelas contam no mês de cada parcela; gasto sem data fica no mês em
   que vence.
-- **1ª linha (verde-petróleo):** abas Lançamentos · Gráficos · **Renda** (campo da renda mensal, logo
-  depois de Gráficos, também no celular) · Linha do tempo · Consultar e o botão "Importar arquivo", que
-  abre direto a escolha do arquivo. Não há mais renda no cabeçalho.
+- **1ª linha (verde-petróleo):** abas Lançamentos · Gráficos · **Renda** (botão logo depois de Gráficos,
+  também no celular, mostrando o total de entradas do mês) · Linha do tempo · Consultar e o botão
+  "Importar arquivo", que abre direto a escolha do arquivo. Não há mais renda no cabeçalho.
+- **Renda = entradas lançadas** (salário, mesada, Pix recebido…): o botão "Renda" (e "＋ Lançar entrada")
+  abre o mesmo passo a passo dos lançamentos — nome → valor → data → "Só este mês" ou "Todo mês"
+  (repete 24 meses, `recorrente`/`recGrupo`, com "parar"). Ficam em `orcamento/config/entradas`
+  (nunca apagadas ao zerar a base) e contam no mês da data. O antigo `config.renda` não é mais usado.
+- **Fechamento do mês** no fim da lista (computador e celular) e nos cartões do resumo: gastos fixos,
+  supérfluos e total no filtro escolhido (Tudo/Cartão/Débito, na visão Vencendo/Gastos do mês),
+  entradas do mês (com a lista, ✕ para excluir) e **Saldo real = entradas − todos os gastos do mês**.
+  Gráficos e Linha do tempo usam as entradas de cada mês.
 - **Botões uniformes:** os botões da 1ª linha têm o mesmo tamanho dos da 2ª (40px de altura, fonte 13px
   em negrito); no celular a 1ª linha ocupa a largura toda. **Campos de digitação com fonte de no mínimo
   16px** (senão o iPhone dá zoom ao tocar e não volta) — não bloquear o zoom pela tag viewport.

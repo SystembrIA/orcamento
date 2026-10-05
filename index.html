@@ -114,22 +114,16 @@
     border:1.5px solid var(--tab); color:var(--tab); font-size:13px; font-weight:700; white-space:nowrap; background:var(--surface);
     min-height:40px; box-sizing:border-box;
   }
-  .renda-tab span{ color:var(--text-muted); font-weight:500; }
-  .renda-tab input{
-    /* 16px: com fonte menor o iPhone dá zoom ao tocar no campo */
-    border:none; outline:none; background:transparent; width:70px; font-size:16px; font-weight:700;
-    color:var(--text-primary); font-variant-numeric:tabular-nums; padding:4px 0;
-  }
-  .renda-tab:focus-within{ outline:2px solid var(--tab); outline-offset:2px; }
+  .renda-tab{ appearance:none; cursor:pointer; font-family:inherit; }
+  .renda-tab b{ color:var(--text-primary); font-variant-numeric:tabular-nums; }
+  .renda-tab:hover{ background:var(--tab-soft); }
+  .renda-tab:focus-visible{ outline:2px solid var(--tab); outline-offset:2px; }
   @media (max-width:640px){
     .renda-tab{ padding:0 8px; gap:4px; }
-    .renda-tab span{ display:none; }
-    .renda-tab input{ width:60px; font-size:16px; }
     .tabs .tab-btn{ padding:8px 9px; }
     /* no celular a linha ocupa a largura toda, igual às linhas de baixo */
     .topo-row nav.tabs{ width:100%; }
     .topo-row nav.tabs > *{ flex:1 1 auto; justify-content:center; }
-    .renda-tab input{ flex:1; min-width:0; }
   }
   .income-box{ display:flex; flex-direction:column; gap:6px; align-items:flex-start; }
   .income-box label{ font-size:12px; color:var(--text-secondary); font-weight:600; text-transform:uppercase; letter-spacing:0.03em; }
@@ -173,9 +167,30 @@
   .tab-panel[hidden]{ display:none; }
 
   .summary-row{
-    display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px;
+    display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:20px;
   }
-  @media (max-width:640px){ .summary-row{ grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:640px){ .summary-row{ grid-template-columns:repeat(2,1fr); } .summary-row .tile-saldo{ grid-column:1 / -1; } }
+  .tile-entrada .tile-value{ color:var(--good); }
+  /* fechamento do mês: no fim da lista (computador e celular) */
+  .fecho{ border-top:1px solid var(--border); margin-top:6px; padding:12px 8px 4px; display:grid; grid-template-columns:minmax(0,1fr); gap:2px; }
+  .fecho-tit{ font-size:12px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.03em; margin-bottom:6px; }
+  .fecho-linha{ display:flex; align-items:center; gap:10px; padding:6px 0; font-size:14px; }
+  .fecho-linha > span{ flex:1 1 auto; min-width:0; }
+  .fecho-linha > b{ font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .fecho-linha.total{ border-top:1px dashed var(--border); font-weight:700; }
+  .fecho-linha.entrada > b{ color:var(--good); }
+  .fecho-ent{ display:flex; align-items:center; gap:8px; padding:3px 0 3px 14px; font-size:13px; color:var(--text-secondary); }
+  .fecho-ent > span{ flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .fecho-ent > b{ font-variant-numeric:tabular-nums; color:var(--good); white-space:nowrap; }
+  .fecho-ent .btn-del{ width:32px; height:32px; }
+  .fecho-ent .rec-stop{ font-size:12px; }
+  .fecho-linha.saldo{ border-top:2px solid var(--border); margin-top:4px; padding-top:10px; font-size:16px; font-weight:800; }
+  .fecho-linha.saldo.is-good > b{ color:var(--good); }
+  .fecho-linha.saldo.is-bad > b{ color:var(--critical); }
+  .fecho-nota{ font-size:12px; color:var(--text-muted); margin:2px 0 6px; }
+  .btn-add.btn-entrada{ background:var(--good); min-height:44px; padding:0 14px; font-size:14px; font-weight:700; justify-self:start; margin-top:8px; }
+  .m-group .fecho{ border-top:none; margin:0; padding:12px 14px; }
+  .m-group .btn-add.btn-entrada{ justify-self:stretch; min-height:50px; }
   .tile{
     background:var(--surface); border:1px solid var(--border); border-radius:12px;
     padding:14px 16px; box-shadow:var(--shadow);
@@ -615,9 +630,7 @@
   <nav class="tabs" role="tablist">
     <button class="tab-btn active" data-tab="lancamentos" role="tab" aria-selected="true">Lançamentos</button>
     <button class="tab-btn" data-tab="graficos" role="tab" aria-selected="false">Gráficos</button>
-    <label class="renda-tab" for="renda-input" title="Renda mensal">Renda <span>R$</span>
-      <input id="renda-input" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0,00" aria-label="Renda mensal">
-    </label>
+    <button type="button" class="renda-tab" id="renda-btn" title="Lançar uma entrada (salário, mesada, Pix recebido…)">Renda <b id="renda-total">R$ 0</b></button>
     <button class="tab-btn only-desktop" data-tab="timeline" role="tab" aria-selected="false">Linha do tempo</button>
     <button class="tab-btn only-desktop" data-tab="consultar" role="tab" aria-selected="false">Consultar</button>
     <label class="tab-btn tab-import only-desktop" for="fatura-file-input" title="Fatura ou extrato em PDF, CSV, OFX ou Excel">⬆ Importar arquivo
@@ -680,9 +693,10 @@
         <table class="expense-table">
           <thead><tr><th class="col-data">Data</th><th>Descrição</th><th>Categoria</th><th class="col-tipo">Tipo</th><th class="col-meio">Pago com</th><th class="col-valor">Valor</th><th class="col-parcelas">Parcelas</th><th></th></tr></thead>
           <tbody id="tbody-lanc"></tbody>
-          <tfoot><tr><td colspan="5">Total do mês</td><td class="col-valor" id="total-mes-cell">R$ 0,00</td><td></td><td></td></tr></tfoot>
+          <tfoot><tr><td colspan="5">Total de gastos</td><td class="col-valor" id="total-mes-cell">R$ 0,00</td><td></td><td></td></tr></tfoot>
         </table>
       </div>
+      <div id="fecho-desk"></div>
     </div>
     <p class="footer-note only-desktop">Os dados ficam salvos no banco de dados, mês a mês — pode fechar e voltar quando quiser, e buscar qualquer gasto na aba "Consultar". Em "Parcelas", informe em quantos meses esse gasto deve se repetir automaticamente. Ao trocar a categoria de um gasto, o app aprende e usa isso nas próximas importações.</p>
   </section>
@@ -935,6 +949,25 @@
     if(viewMode==="compra" && it.data && (Number(it.parcelaTotal)||1)<=1) return String(it.data).slice(0,7);
     return it.mesRef || "";
   }
+  // Entradas (renda): salário, mesada, Pix recebido… Ficam em config/entradas (a renda nunca é
+  // apagada ao zerar a base) e contam no mês da data em que entraram.
+  function entradasLista(){
+    var e = (STATE.config && STATE.config.entradas) || {};
+    return Object.keys(e).map(function(k){ return Object.assign({ id:k }, e[k]); });
+  }
+  function entradasDoMes(key){
+    return entradasLista().filter(function(x){ return String(x.data||"").slice(0,7)===key; })
+      .sort(function(a,b){ return String(a.data||"")<String(b.data||"") ? -1 : (String(a.data||"")>String(b.data||"") ? 1 : (a.createdAt||0)-(b.createdAt||0)); });
+  }
+  function somaEntradas(key){ return entradasDoMes(key).reduce(function(s, x){ return s+(Number(x.valor)||0); }, 0); }
+  // todos os gastos do mês na visão escolhida, sem o filtro de cartão/débito (é o que sai do bolso)
+  function gastosDoMesTodos(){
+    var key = viewedMonthKey();
+    return STATE.items.filter(function(it){ return effectiveMonthKey(it)===key; })
+      .reduce(function(s, it){ return s+(Number(it.valor)||0); }, 0);
+  }
+  var FILTRO_LABEL = { "":"cartão + débito", cartao:"só cartão de crédito", conta:"só débito (conta corrente)" };
+
   function itemsForViewedMonth(){
     var key = viewedMonthKey();
     return STATE.items.filter(function(it){ return effectiveMonthKey(it)===key && (!meioFiltro || meioOf(it)===meioFiltro); });
@@ -1090,6 +1123,32 @@
         updateDerived();
       }
     },
+    addEntradas: function(lista){
+      if(mode==="firebase"){
+        var upd = {};
+        lista.forEach(function(x){ upd[db.ref(FIREBASE_PATH+"/config/entradas").push().key] = x; });
+        db.ref(FIREBASE_PATH+"/config/entradas").update(upd).catch(function(e){ console.error(e); window.alert("Não consegui gravar a entrada agora. Tente de novo."); });
+      } else {
+        STATE.config = Object.assign({}, STATE.config);
+        STATE.config.entradas = Object.assign({}, STATE.config.entradas || {});
+        lista.forEach(function(x, i){ STATE.config.entradas["local-e-"+Date.now()+"-"+i+"-"+Math.random().toString(36).slice(2,6)] = x; });
+        saveLocal();
+        onConfigChange();
+      }
+    },
+    deleteEntradas: function(ids){
+      if(!ids.length) return;
+      if(mode==="firebase"){
+        var upd = {};
+        ids.forEach(function(id){ upd[id] = null; });
+        db.ref(FIREBASE_PATH+"/config/entradas").update(upd).catch(function(e){ console.error(e); window.alert("Não consegui excluir agora. Tente de novo."); });
+      } else {
+        STATE.config.entradas = Object.assign({}, STATE.config.entradas || {});
+        ids.forEach(function(id){ delete STATE.config.entradas[id]; });
+        saveLocal();
+        onConfigChange();
+      }
+    },
     setConfig: function(patch){
       if(mode==="firebase"){
         db.ref(FIREBASE_PATH+"/config").update(patch).catch(function(e){ console.error(e); });
@@ -1226,21 +1285,13 @@
   function renderSummaryInto(elId, totals){
     var el = document.getElementById(elId);
     if(!el) return;
-    var renda = Number(STATE.config.renda)||0;
-    var saldo = renda - totals.total;
-    var saldoClass = "";
-    var saldoNote = "Informe sua renda acima";
-    var saldoValue = "—";
-    if(renda>0){
-      saldoValue = formatMoney(saldo);
-      if(saldo>=0){ saldoClass="is-good"; saldoNote="Sobra no mês"; }
-      else { saldoClass="is-bad"; saldoNote="Estourou o orçamento"; }
-    }
+    var f = fechamentoDoMes(totals);
     el.innerHTML =
-      '<div class="tile"><div class="tile-label"><span class="dot dot-fixo"></span>Gastos fixos</div><div class="tile-value">'+formatMoney(totals.fixo)+'</div></div>' +
-      '<div class="tile"><div class="tile-label"><span class="dot dot-superfluo"></span>Gastos supérfluos</div><div class="tile-value">'+formatMoney(totals.superfluo)+'</div></div>' +
-      '<div class="tile tile-total"><div class="tile-label">Total do mês</div><div class="tile-value">'+formatMoney(totals.total)+'</div></div>' +
-      '<div class="tile tile-saldo '+saldoClass+'"><div class="tile-label">Saldo</div><div class="tile-value">'+saldoValue+'</div><div class="tile-note">'+saldoNote+'</div></div>';
+      '<div class="tile"><div class="tile-label"><span class="dot dot-fixo"></span>Gastos fixos</div><div class="tile-value">'+formatMoney(totals.fixo)+'</div><div class="tile-note">'+f.filtro+'</div></div>' +
+      '<div class="tile"><div class="tile-label"><span class="dot dot-superfluo"></span>Gastos supérfluos</div><div class="tile-value">'+formatMoney(totals.superfluo)+'</div><div class="tile-note">'+f.filtro+'</div></div>' +
+      '<div class="tile tile-total"><div class="tile-label">Total de gastos</div><div class="tile-value">'+formatMoney(totals.total)+'</div><div class="tile-note">'+f.periodo+'</div></div>' +
+      '<div class="tile tile-entrada"><div class="tile-label">Entradas do mês</div><div class="tile-value">'+formatMoney(f.entradas)+'</div><div class="tile-note">'+(f.qtdEntradas ? f.qtdEntradas+' entrada(s)' : 'Lance no botão "Renda"')+'</div></div>' +
+      '<div class="tile tile-saldo '+f.cls+'"><div class="tile-label">Saldo real</div><div class="tile-value">'+formatMoney(f.saldo)+'</div><div class="tile-note">'+f.nota+'</div></div>';
   }
 
   function renderSplit(totals){
@@ -1282,37 +1333,66 @@
     });
   }
 
+  // Fechamento do mês: gastos (no filtro escolhido), entradas e saldo real = entradas − todos os
+  // gastos do mês (cartão + débito), na visão escolhida (vencendo no mês / gastos do mês).
+  function fechamentoDoMes(totals){
+    var key = viewedMonthKey(), ents = entradasDoMes(key);
+    var entradas = ents.reduce(function(s, x){ return s+(Number(x.valor)||0); }, 0);
+    var todos = gastosDoMesTodos(), saldo = entradas - todos;
+    var mes = mesLabelOf(currentViewMonth).toLowerCase();
+    return {
+      key:key, lista:ents, entradas:entradas, qtdEntradas:ents.length, todos:todos, saldo:saldo,
+      filtro: meioFiltro ? FILTRO_LABEL[meioFiltro] : "cartão + débito",
+      periodo: (viewMode==="compra" ? "Gastos feitos em " : "Vencendo em ")+mes+(meioFiltro ? " · "+FILTRO_LABEL[meioFiltro] : ""),
+      cls: saldo>=0 ? "is-good" : "is-bad",
+      nota: (saldo>=0 ? "Sobra" : "Falta")+" · entradas − todos os gastos"
+    };
+  }
+
+  function fechoHtml(totals){
+    var f = fechamentoDoMes(totals);
+    var h = '<div class="fecho"><div class="fecho-tit">Fechamento — '+escapeXml(f.periodo)+'</div>'+
+      '<div class="fecho-linha"><span><span class="dot dot-fixo"></span> Gastos fixos</span><b>'+formatMoney(totals.fixo)+'</b></div>'+
+      '<div class="fecho-linha"><span><span class="dot dot-superfluo"></span> Gastos supérfluos</span><b>'+formatMoney(totals.superfluo)+'</b></div>'+
+      '<div class="fecho-linha total"><span>Total de gastos'+(meioFiltro ? ' ('+FILTRO_LABEL[meioFiltro]+')' : '')+'</span><b>'+formatMoney(totals.total)+'</b></div>';
+    if(meioFiltro) h += '<div class="fecho-linha"><span>Todos os gastos do mês (cartão + débito)</span><b>'+formatMoney(f.todos)+'</b></div>';
+    h += '<div class="fecho-linha entrada"><span>Entradas do mês</span><b>+ '+formatMoney(f.entradas)+'</b></div>';
+    h += f.lista.map(function(x){
+      return '<div class="fecho-ent" data-ent="'+escapeAttr(x.id)+'"><span>'+formatIsoBR(x.data).slice(0,5)+' · '+escapeXml(x.desc||"Entrada")+(x.recorrente ? ' <em>(todo mês)</em>' : '')+'</span>'+
+        (x.recorrente ? '<button type="button" class="rec-stop" data-ent-parar="'+escapeAttr(x.id)+'" title="Parar de repetir: apaga os próximos meses">parar</button>' : '')+
+        '<b>'+formatMoney(x.valor)+'</b><button type="button" class="btn-del" data-ent-del="'+escapeAttr(x.id)+'" aria-label="Excluir entrada '+escapeAttr(x.desc||"")+'" title="Excluir">✕</button></div>';
+    }).join("");
+    if(!f.lista.length) h += '<p class="fecho-nota">Nenhuma entrada lançada neste mês.</p>';
+    h += '<div class="fecho-linha saldo '+f.cls+'"><span>Saldo real <small class="fecho-nota">(entradas − todos os gastos)</small></span><b>'+formatMoney(f.saldo)+'</b></div>'+
+      '<button type="button" class="btn-add btn-entrada" data-ent-nova="1">＋ Lançar entrada</button></div>';
+    return h;
+  }
+
   function renderGanhoGastos(totals){
     var el = document.getElementById("chart-ganho-gastos");
     var saldoEl = document.getElementById("saldo-mini");
     if(!el || !saldoEl) return;
-    var renda = Number(STATE.config.renda)||0;
+    var renda = somaEntradas(viewedMonthKey());
     if(renda<=0 && totals.total<=0){
-      el.innerHTML = '<p class="empty-note">Informe sua renda e seus gastos para ver esta comparação.</p>';
+      el.innerHTML = '<p class="empty-note">Lance suas entradas (botão "Renda") e seus gastos para ver esta comparação.</p>';
       saldoEl.innerHTML = "";
       return;
     }
     var data = [
-      { label:"Ganho", value:renda },
+      { label:"Entradas", value:renda },
       { label:"Gastos", value:totals.total }
     ];
     el.innerHTML = buildBarChartSvg(
       data,
-      function(d){ return d.label==="Ganho" ? "var(--good)" : "var(--fixo)"; },
+      function(d){ return d.label==="Entradas" ? "var(--good)" : "var(--fixo)"; },
       function(d){ return d.label+" — "+formatMoney(d.value); }
     );
     wireTooltips(el);
 
-    var saldo = renda - totals.total;
-    if(renda>0){
-      var cls = saldo>=0 ? "is-good" : "is-bad";
-      var note = saldo>=0 ? "Sobra no mês" : "Estourou o orçamento";
-      saldoEl.innerHTML =
-        '<div class="tile tile-saldo '+cls+'"><div class="tile-label">Saldo do mês</div>' +
-        '<div class="tile-value">'+formatMoney(saldo)+'</div><div class="tile-note">'+note+'</div></div>';
-    } else {
-      saldoEl.innerHTML = '<p class="empty-note">Informe sua renda para ver o saldo.</p>';
-    }
+    var f = fechamentoDoMes(totals);
+    saldoEl.innerHTML =
+      '<div class="tile tile-saldo '+f.cls+'"><div class="tile-label">Saldo real do mês</div>' +
+      '<div class="tile-value">'+formatMoney(f.saldo)+'</div><div class="tile-note">'+f.nota+'</div></div>';
   }
 
   // opts.selectable: cada barra vira um botão (clique/Enter abre os lançamentos dela);
@@ -1507,7 +1587,6 @@
   }
 
   function computeTimelineMonths(count){
-    var renda = Number(STATE.config.renda)||0;
     var months = [];
     var acumulado = 0;
     var base = firstOfMonth(new Date());
@@ -1517,6 +1596,7 @@
       var gastos = STATE.items
         .filter(function(it){ return (it.mesRef||"")===key; })
         .reduce(function(sum,it){ return sum+(Number(it.valor)||0); }, 0);
+      var renda = somaEntradas(key);
       var saldoMes = renda - gastos;
       var open = acumulado;
       var close = acumulado + saldoMes;
@@ -1573,7 +1653,7 @@
       var yOpen = yFor(m.open), yClose = yFor(m.close);
       var top = Math.min(yOpen,yClose), bh = Math.max(2, Math.abs(yClose-yOpen));
       var cls = m.saldoMes>0.005 ? "candle-up" : (m.saldoMes<-0.005 ? "candle-down" : "candle-flat");
-      var tip = m.label+" — Ganho "+formatMoney(m.renda)+" · Gastos "+formatMoney(m.gastos)+" · Saldo do mês "+formatMoney(m.saldoMes)+" · Acumulado "+formatMoney(m.acumuladoFim);
+      var tip = m.label+" — Entradas "+formatMoney(m.renda)+" · Gastos "+formatMoney(m.gastos)+" · Saldo do mês "+formatMoney(m.saldoMes)+" · Acumulado "+formatMoney(m.acumuladoFim);
       return '<g class="candle-g" data-tip="'+escapeAttr(tip)+'">' +
         '<line x1="'+cx+'" y1="'+yHigh+'" x2="'+cx+'" y2="'+yLow+'" class="candle-wick"></line>' +
         '<rect x="'+(cx-bodyW/2)+'" y="'+top+'" width="'+bodyW+'" height="'+bh+'" rx="2" class="candle-body '+cls+'"></rect>' +
@@ -1593,9 +1673,8 @@
     var el = document.getElementById("chart-timeline");
     var legendEl = document.getElementById("timeline-legend");
     if(!el || !legendEl) return;
-    var renda = Number(STATE.config.renda)||0;
-    if(renda<=0 && STATE.items.length===0){
-      el.innerHTML = '<p class="empty-note">Informe sua renda e seus gastos para ver a linha do tempo.</p>';
+    if(!entradasLista().length && STATE.items.length===0){
+      el.innerHTML = '<p class="empty-note">Lance suas entradas (botão "Renda") e seus gastos para ver a linha do tempo.</p>';
       legendEl.innerHTML = "";
       return;
     }
@@ -1617,6 +1696,12 @@
     renderSummaryInto("summary-row-1", totals);
     renderSummaryInto("summary-row-2", totals);
     document.getElementById("total-mes-cell").textContent = formatMoney(totals.total);
+    document.getElementById("fecho-desk").innerHTML = fechoHtml(totals);
+    var rt = document.getElementById("renda-total");
+    if(rt){
+      var ent = somaEntradas(viewedMonthKey());
+      rt.textContent = Math.abs(ent-Math.round(ent))<0.005 ? new Intl.NumberFormat("pt-BR", { style:"currency", currency:"BRL", maximumFractionDigits:0, minimumFractionDigits:0 }).format(ent) : formatMoney(ent);
+    }
     renderGanhoGastos(totals);
     renderSplit(totals);
     renderTop();
@@ -1629,13 +1714,7 @@
     if(typeof renderBase==="function") renderBase();
   }
 
-  function syncRendaInput(){
-    var rendaInput = document.getElementById("renda-input");
-    if(document.activeElement !== rendaInput){
-      var r = Number(STATE.config.renda)||0;
-      rendaInput.value = r ? r : "";
-    }
-  }
+  function syncRendaInput(){}
 
   function onConfigChange(){
     syncRendaInput();
@@ -2826,16 +2905,28 @@
     });
   });
 
-  var rendaInput = document.getElementById("renda-input");
-  var rendaTimer = null;
-  rendaInput.addEventListener("input", function(){
-    clearTimeout(rendaTimer);
-    rendaTimer = setTimeout(function(){
-      var v = parseFloat(rendaInput.value);
-      if(isNaN(v) || v<0) v = 0;
-      store.setConfig({ renda:v });
-    }, 500);
-  });
+  document.getElementById("renda-btn").addEventListener("click", function(){ abrirLancamento(null, { entrada:true }); });
+
+  // botões do fechamento (lançar, excluir e parar de repetir entradas), no computador e no celular
+  function cliqueFecho(e){
+    var b = e.target.closest("[data-ent-nova],[data-ent-del],[data-ent-parar]");
+    if(!b) return;
+    e.stopPropagation();
+    if(b.dataset.entNova){ abrirLancamento(null, { entrada:true }); return; }
+    var id = b.dataset.entDel || b.dataset.entParar;
+    var x = entradasLista().filter(function(y){ return y.id===id; })[0];
+    if(!x) return;
+    if(b.dataset.entDel){
+      if(!window.confirm('Excluir a entrada "'+(x.desc||"Entrada")+'" de '+formatMoney(x.valor)+' ('+formatIsoBR(x.data)+')?')) return;
+      store.deleteEntradas([id]);
+      return;
+    }
+    var futuras = entradasLista().filter(function(y){ return y.recGrupo && y.recGrupo===x.recGrupo && String(y.data||"") > String(x.data||""); });
+    if(!window.confirm('Parar de repetir "'+(x.desc||"Entrada")+'"? As '+futuras.length+' entrada(s) dos meses seguintes serão apagadas; este mês fica.')) return;
+    store.deleteEntradas(futuras.map(function(y){ return y.id; }));
+  }
+  document.getElementById("fecho-desk").addEventListener("click", cliqueFecho);
+  document.getElementById("m-list").addEventListener("click", cliqueFecho, true);
 
   /* ---------- consulta (busca em todos os meses) ---------- */
 
@@ -2953,7 +3044,7 @@
         '<span class="m-group-total">'+formatMoney(total)+'</span></div>'+
         (rows ? '<ul class="m-list-ul">'+rows+'</ul>' : '<p class="m-empty">Nenhum lançamento neste mês.</p>')+
         '</section>';
-    }).join("");
+    }).join("") + '<section class="m-group">'+fechoHtml(computeTotals())+'</section>';
     el.innerHTML = html;
   }
 
@@ -3223,8 +3314,11 @@
   // O cartão do Pedro fecha por volta do dia 19 e vence no dia 26: compra até o dia 19 entra na
   // fatura que vence no mesmo mês; depois disso, na do mês seguinte.
   var DIA_FECHAMENTO_CARTAO = 19;
-  var WIZ_PASSOS = ["categoria","nome","valor","data","meio"];
+  var PASSOS_DESPESA = ["categoria","nome","valor","data","meio"];
+  var PASSOS_ENTRADA = ["nome","valor","data","repete"];
+  var WIZ_PASSOS = PASSOS_DESPESA;
   var W = null;
+  var NOMES_ENTRADA = ["Salário","Mesada","Pix recebido","Freela","Reembolso","Rendimento"];
   var wiz = { dlg: document.getElementById("wiz"), body: document.getElementById("wiz-body"),
               dots: document.getElementById("wiz-dots"), back: document.getElementById("wiz-back") };
 
@@ -3264,7 +3358,9 @@
   }
 
   function abrirLancamento(pre, opcoes){
-    W = { passo:0, categoria:null, desc:"", valor:null, data:null, meio:null, pre: !!pre, tipo: (opcoes && opcoes.tipo) || null };
+    var entrada = !!(opcoes && opcoes.entrada);
+    WIZ_PASSOS = entrada ? PASSOS_ENTRADA : PASSOS_DESPESA;
+    W = { passo:0, categoria:null, desc:"", valor:null, data:null, meio:null, pre: !!pre, tipo: (opcoes && opcoes.tipo) || null, entrada: entrada, repete:null };
     if(pre){ Object.keys(pre).forEach(function(k){ if(pre[k]!=null && pre[k]!=="") W[k] = pre[k]; }); }
     W.passo = proximoPassoVazio(0);
     if(typeof wiz.dlg.showModal==="function") wiz.dlg.showModal(); else wiz.dlg.setAttribute("open","");
@@ -3282,6 +3378,7 @@
       if(p==="valor" && !(W.valor>0)) return i;
       if(p==="data" && !W.data) return i;
       if(p==="meio" && !W.meio) return i;
+      if(p==="repete" && W.repete==null) return i;
     }
     return WIZ_PASSOS.length; // tudo preenchido: tela de conferir
   }
@@ -3289,6 +3386,7 @@
 
   function chips(){
     var c = [];
+    if(W.entrada) c.push("Entrada");
     if(W.tipo==="fixo") c.push("Gasto fixo");
     if(W.categoria) c.push((CAT_ICONE[W.categoria]||"")+" "+W.categoria);
     if(W.desc) c.push(W.desc);
@@ -3330,14 +3428,14 @@
     }
 
     if(passo==="nome"){
-      b.innerHTML = '<h2 class="wiz-q" id="wiz-title">Nome da despesa</h2>'+chips()+
-        '<input class="wiz-input" id="wiz-nome" type="text" placeholder="Ex.: Uber, Mercado, iFood" autocomplete="off" enterkeyhint="next" value="'+escapeAttr(W.desc||"")+'">'+
+      b.innerHTML = '<h2 class="wiz-q" id="wiz-title">'+(W.entrada ? "De onde veio a entrada?" : "Nome da despesa")+'</h2>'+chips()+
+        '<input class="wiz-input" id="wiz-nome" type="text" placeholder="'+(W.entrada ? "Ex.: Salário, Mesada, Pix recebido" : "Ex.: Uber, Mercado, iFood")+'" autocomplete="off" enterkeyhint="next" value="'+escapeAttr(W.desc||"")+'">'+
         '<div class="wiz-sugs" id="wiz-sugs"></div>'+
         '<button type="button" class="btn-add btn-big wiz-next" id="wiz-ok">Continuar</button>';
       var nome = document.getElementById("wiz-nome"), sugs = document.getElementById("wiz-sugs"), ok = document.getElementById("wiz-ok");
       var lista = [];
       var desenharS = function(){
-        lista = sugestoesNome(W.categoria, nome.value);
+        lista = W.entrada ? sugestoesEntrada(nome.value) : sugestoesNome(W.categoria, nome.value);
         sugs.innerHTML = lista.map(function(m, i){
           return '<button type="button" class="wiz-sug" data-i="'+i+'"><span>'+escapeXml(m.nome)+'</span><small>'+(m.valor ? "último "+formatMoney(m.valor) : "")+'</small></button>';
         }).join("");
@@ -3369,7 +3467,7 @@
       var inp = document.getElementById("wiz-valor");
       var seguirV = function(){
         var v = Math.abs(parseAmount(inp.value));
-        if(isNaN(v) || v<=0){ document.getElementById("wiz-erro").textContent = "Digite o valor da despesa."; inp.focus(); return; }
+        if(isNaN(v) || v<=0){ document.getElementById("wiz-erro").textContent = W.entrada ? "Digite o valor da entrada." : "Digite o valor da despesa."; inp.focus(); return; }
         W.valor = Math.round(v*100)/100; avancar();
       };
       document.getElementById("wiz-ok").addEventListener("click", seguirV);
@@ -3382,13 +3480,13 @@
 
     if(passo==="data"){
       var h = isoToDate(hojeIso()), o = isoToDate(ontemIso());
-      b.innerHTML = '<h2 class="wiz-q" id="wiz-title">Quando foi?</h2>'+chips()+
+      b.innerHTML = '<h2 class="wiz-q" id="wiz-title">'+(W.entrada ? "Quando entrou?" : "Quando foi?")+'</h2>'+chips()+
         '<div class="wiz-grid">'+
           '<button type="button" class="wiz-big" data-data="'+hojeIso()+'">Hoje<small>'+formatIsoBR(hojeIso()).slice(0,5)+'</small></button>'+
           '<button type="button" class="wiz-big" data-data="'+ontemIso()+'">Ontem<small>'+formatIsoBR(ontemIso()).slice(0,5)+'</small></button>'+
         '</div>'+
         '<button type="button" class="wiz-link" id="wiz-outra">Outra data</button>'+
-        '<div id="wiz-outra-box" hidden><input class="wiz-input" id="wiz-data" type="date" max="'+hojeIso()+'"><button type="button" class="btn-add btn-big" id="wiz-ok-data" style="margin-top:10px">Continuar</button></div>';
+        '<div id="wiz-outra-box" hidden><input class="wiz-input" id="wiz-data" type="date"'+(W.entrada ? '' : ' max="'+hojeIso()+'"')+'><button type="button" class="btn-add btn-big" id="wiz-ok-data" style="margin-top:10px">Continuar</button></div>';
       b.querySelectorAll(".wiz-big").forEach(function(btn){ btn.addEventListener("click", function(){ W.data = btn.dataset.data; avancar(); }); });
       document.getElementById("wiz-outra").addEventListener("click", function(){
         document.getElementById("wiz-outra-box").hidden = false; document.getElementById("wiz-data").focus();
@@ -3404,6 +3502,28 @@
         '<button type="button" class="wiz-big" data-meio="cartao">💳 Cartão de crédito</button>'+
         '<button type="button" class="wiz-big" data-meio="conta">🏦 Conta corrente<small>débito, Pix</small></button>';
       b.querySelectorAll(".wiz-big").forEach(function(btn){ btn.addEventListener("click", function(){ W.meio = btn.dataset.meio; salvarLancamento(); }); });
+      return;
+    }
+
+    if(passo==="repete"){
+      b.innerHTML = '<h2 class="wiz-q" id="wiz-title">Essa entrada se repete?</h2>'+chips()+
+        '<button type="button" class="wiz-big" data-rep="0">Só este mês</button>'+
+        '<button type="button" class="wiz-big" data-rep="1">Todo mês<small>mesmo dia e valor (ex.: salário)</small></button>';
+      b.querySelectorAll(".wiz-big").forEach(function(btn){ btn.addEventListener("click", function(){ W.repete = btn.dataset.rep==="1"; salvarEntrada(); }); });
+      return;
+    }
+
+    if(passo==="feito" && W.entrada){
+      b.innerHTML = '<div class="wiz-ok"><div class="big">✓</div><h2 class="wiz-q" id="wiz-title">Entrada lançada!</h2></div>'+
+        '<div class="wiz-resumo">'+
+          '<div><b>'+escapeXml(W.desc)+'</b> · <b>'+formatMoney(W.valor)+'</b> · '+formatIsoBR(W.data)+'</div>'+
+          (W.repete ? '<div class="m-item-sub">Repete todo mês, dia '+isoToDate(W.data).getDate()+', com o mesmo valor.</div>' : '')+
+          '<div class="m-item-sub">Saldo real de '+escapeXml(mesLabelOf(isoToDate(W.data))).toLowerCase()+': entradas − todos os gastos do mês.</div>'+
+        '</div>'+
+        '<button type="button" class="btn-add btn-big" id="wiz-outro">＋ Lançar outra entrada</button>'+
+        '<button type="button" class="btn-ghost" id="wiz-fim" style="min-height:48px">Concluir</button>';
+      document.getElementById("wiz-outro").addEventListener("click", function(){ abrirLancamento(null, { entrada:true }); });
+      document.getElementById("wiz-fim").addEventListener("click", fecharLancamento);
       return;
     }
 
@@ -3460,6 +3580,35 @@
     refreshMonthView();
   }
 
+  function sugestoesEntrada(texto){
+    var q = normalizeText(texto).trim(), mapa = {};
+    NOMES_ENTRADA.forEach(function(n, i){ mapa[descKey(n)] = { nome:n, n:0, ultimo:-1-i, valor:0 }; });
+    entradasLista().forEach(function(x){
+      var nome = (x.desc||"").trim(); if(!nome) return;
+      var k = descKey(nome);
+      if(!mapa[k]) mapa[k] = { nome:nome, n:0, ultimo:0, valor:0 };
+      var m = mapa[k]; m.n++;
+      if((x.createdAt||0)>=m.ultimo){ m.ultimo = x.createdAt||0; m.valor = Number(x.valor)||0; }
+    });
+    return Object.keys(mapa).map(function(k){ return mapa[k]; })
+      .filter(function(m){ return !q || normalizeText(m.nome).indexOf(q)>-1; })
+      .sort(function(a,b){ return b.n-a.n || b.ultimo-a.ultimo; })
+      .slice(0,8);
+  }
+
+  function salvarEntrada(){
+    var grupo = W.repete ? ("rec-e-"+Date.now()+"-"+Math.random().toString(36).slice(2,7)) : null;
+    var datas = W.repete ? datasMensais(W.data, MESES_GASTO_FIXO) : [W.data];
+    store.addEntradas(datas.map(function(dt, k){
+      var x = { desc: W.desc, valor: W.valor, data: dt, createdAt: Date.now()+k };
+      if(W.repete){ x.recorrente = true; x.recGrupo = grupo; }
+      return x;
+    }));
+    W.salvo = true;
+    W.passo = WIZ_PASSOS.length;
+    renderPasso();
+  }
+
   function salvarLancamento(){
     var tipo = W.tipo || guessTipo(W.desc, W.categoria);
     var repete = W.tipo==="fixo";
@@ -3487,6 +3636,7 @@
     W.passo = Math.min(W.passo, WIZ_PASSOS.length)-1;
     var p = WIZ_PASSOS[W.passo];
     if(p==="meio") W.meio = null;
+    if(p==="repete") W.repete = null;
     renderPasso();
   });
   document.getElementById("wiz-close").addEventListener("click", fecharLancamento);
