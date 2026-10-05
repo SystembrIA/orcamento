@@ -6,9 +6,9 @@ sem jargão técnico.
 
 ## Acesso
 
-O painel abre pelo hub (repositório `SystembrIA/hub`), no atalho "Conciliação Financeira", que
-aparece só para os logins `justadm` (Michael) e `pedro` (Pedro Henrique, filho dele). No painel,
-entram administradores e os logins da lista `USUARIOS_OK` no topo do `index.html`.
+O painel se chama **Conciliação** e abre pelo hub (repositório `SystembrIA/hub`), no atalho
+"Conciliação", que aparece só para os logins `justadm` (Michael) e `pedro` (Pedro Henrique, filho
+dele). No painel só entram os logins da lista `USUARIOS_OK` no topo do `index.html` (esses dois).
 
 ## Publicação: faça tudo sozinho (autorizado pelo Michael)
 
@@ -59,8 +59,14 @@ de continuar. Nunca faça force push na `main`.
   mês" (pela data da compra). Parcelas contam no mês de cada parcela; gasto sem data fica no mês em
   que vence.
 - **Celular (até 640px):** só as abas Lançamentos e Gráficos, a troca de mês, o botão grande
-  "Adicionar despesa" (tipo fixo/supérfluo, descrição, categoria, valor, parcelas, data) e a lista
-  em cartões. "Hoje", "Limpar mês", Linha do tempo, Consultar, resumo e importação ficam só no computador.
+  "Novo lançamento" e a lista em cartões. O "Novo lançamento" é um passo a passo em tela cheia, um
+  campo por tela: categoria (cartões, filtra ao digitar, mais usadas primeiro) → nome (sugere os
+  nomes já usados) → valor → data (Hoje/Ontem/outra) → cartão de crédito ou conta corrente, que já
+  salva. Tocar num gasto da lista abre o formulário de edição.
+- **Link de lançamento (JARVIS):** `?lancar=1&desc=…&valor=…&cat=…&data=hoje|ontem|dd/mm&meio=cartao|conta`
+  abre o passo a passo já preenchido e só grava depois do toque em "Salvar". Compra no cartão
+  depois do dia 19 (`DIA_FECHAMENTO_CARTAO`) vai para a fatura do mês seguinte. Na importação, um
+  gasto igual (mesma data e valor) lançado à mão aparece como "já lançado à mão" e não duplica. "Hoje", "Limpar mês", Linha do tempo, Consultar, resumo e importação ficam só no computador.
 - **Gráficos:** clicar/tocar numa barra abre abaixo os lançamentos daquela barra.
 - **Base de dados** (aba Consultar, só no computador): "Guardar cópia e zerar lançamentos" grava uma
   cópia completa em `orcamento/copias` e só depois apaga `orcamento/items`; cada cópia pode ser

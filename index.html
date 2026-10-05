@@ -1,6 +1,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Orçamento Doméstico</title>
+<title>Conciliação</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-app-compat.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/firebase@9.23.0/firebase-database-compat.min.js"></script>
@@ -11,8 +11,7 @@
 (function(){
   "use strict";
   var HUB_URL = "https://systembria.github.io/hub/";
-  var PAPEIS_OK = ["admin"];
-  // Além dos administradores, entram estes logins (o Pedro, dono dos gastos, e o justadm).
+  // Só entram estes logins: o Pedro (dono dos gastos) e o justadm (Michael).
   var USUARIOS_OK = ["justadm","pedro"];
   var SAFE_HOSTS = ["localhost","127.0.0.1","gitpod","preview","genspark"];
   var isSafe = SAFE_HOSTS.some(function(s){ return (location.hostname||"").indexOf(s)!==-1; })
@@ -32,7 +31,7 @@
   try{ if(typeof JbAuth !== "undefined") user = JbAuth.read(); } catch(e){}
 
   if(!user && !isSafe){ location.replace(HUB_URL + "?_acesso=negado"); }
-  else if(user && PAPEIS_OK.indexOf(user.papel)===-1 && USUARIOS_OK.indexOf(String(user.username||"").toLowerCase().trim())===-1){
+  else if(user && USUARIOS_OK.indexOf(String(user.username||"").toLowerCase().trim())===-1){
     if(typeof JbAuth !== "undefined") JbAuth.logout(HUB_URL + "?_acesso=negado");
     else location.replace(HUB_URL + "?_acesso=negado");
   }
@@ -442,6 +441,66 @@
   .m-empty{ padding:14px; margin:0; color:var(--text-muted); font-size:14px; }
   .m-total{ display:flex; justify-content:space-between; padding:4px 4px 12px; font-weight:700; font-size:15px; font-variant-numeric:tabular-nums; }
 
+  /* ---------- lançamento rápido: um campo por tela ---------- */
+  dialog.wiz{
+    border:none; padding:0; margin:0; width:100%; max-width:100%; height:100%; max-height:100%;
+    background:var(--bg); color:var(--text-primary);
+  }
+  @media (min-width:641px){ dialog.wiz{ max-width:520px; height:min(760px,94vh); margin:auto; border-radius:18px; box-shadow:var(--shadow); } }
+  dialog.wiz::backdrop{ background:rgba(10,12,16,0.45); }
+  dialog.wiz[open]{ display:flex; flex-direction:column; }
+  .wiz-top{ display:flex; align-items:center; gap:10px; padding:12px 14px; padding-top:max(12px, env(safe-area-inset-top)); }
+  .wiz-nav{ appearance:none; border:none; background:var(--surface); color:var(--text-primary); width:44px; height:44px; border-radius:12px; font-size:22px; cursor:pointer; box-shadow:var(--shadow); flex:none; }
+  .wiz-nav[hidden]{ visibility:hidden; display:block; }
+  .wiz-dots{ flex:1; display:flex; gap:6px; justify-content:center; }
+  .wiz-dots span{ width:28px; height:5px; border-radius:3px; background:var(--grid); }
+  .wiz-dots span.on{ background:var(--text-primary); }
+  .wiz-body{ flex:1; overflow:auto; padding:8px 18px 24px; padding-bottom:max(24px, env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:14px; }
+  .wiz-q{ font-family:var(--font-display); font-size:24px; font-weight:800; margin:8px 0 0; }
+  .wiz-chips{ display:flex; flex-wrap:wrap; gap:6px; }
+  .wiz-chip{ font-size:13px; font-weight:600; padding:4px 10px; border-radius:999px; background:var(--surface); border:1px solid var(--border); color:var(--text-secondary); }
+  .wiz-input{
+    width:100%; font-size:20px; font-weight:600; padding:16px; border-radius:14px; border:1.5px solid var(--border);
+    background:var(--surface); color:var(--text-primary); outline:none;
+  }
+  .wiz-input:focus{ border-color:var(--fixo); }
+  .wiz-money{ display:flex; align-items:center; gap:10px; background:var(--surface); border:1.5px solid var(--border); border-radius:14px; padding:6px 16px; }
+  .wiz-money:focus-within{ border-color:var(--fixo); }
+  .wiz-money span{ font-size:22px; color:var(--text-muted); font-weight:700; }
+  .wiz-money input{ border:none; background:transparent; outline:none; font-size:36px; font-weight:800; width:100%; color:var(--text-primary); padding:8px 0; font-variant-numeric:tabular-nums; }
+  .wiz-grid{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px; }
+  .wiz-card{
+    appearance:none; display:flex; align-items:center; gap:10px; text-align:left; min-height:60px; padding:12px;
+    border-radius:14px; border:1.5px solid var(--border); background:var(--surface); color:var(--text-primary);
+    font-size:15px; font-weight:700; cursor:pointer; min-width:0; overflow-wrap:anywhere;
+  }
+  .wiz-card .ico{ font-size:22px; line-height:1; }
+  .wiz-card:active, .wiz-card:focus-visible{ border-color:var(--fixo); background:var(--fixo-soft); outline:none; }
+  .wiz-card.first{ border-color:var(--fixo); }
+  .wiz-sugs{ display:flex; flex-direction:column; gap:8px; }
+  .wiz-sug{
+    appearance:none; display:flex; justify-content:space-between; align-items:center; gap:10px; text-align:left;
+    min-height:54px; padding:10px 14px; border-radius:12px; border:1px solid var(--border); background:var(--surface);
+    color:var(--text-primary); font-size:16px; font-weight:600; cursor:pointer;
+  }
+  .wiz-sug small{ color:var(--text-muted); font-weight:500; font-size:12px; white-space:nowrap; }
+  .wiz-big{
+    appearance:none; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+    min-height:84px; border-radius:16px; border:1.5px solid var(--border); background:var(--surface); color:var(--text-primary);
+    font-size:20px; font-weight:800; cursor:pointer;
+  }
+  .wiz-big small{ font-size:13px; font-weight:600; color:var(--text-muted); }
+  .wiz-big:active, .wiz-big:focus-visible{ border-color:var(--fixo); outline:none; }
+  .wiz-next{ margin-top:auto; }
+  .wiz-next[disabled]{ opacity:0.4; }
+  .wiz-link{ appearance:none; background:none; border:none; color:var(--fixo); font-weight:700; font-size:15px; padding:10px 0; cursor:pointer; text-align:left; }
+  .wiz-ok{ text-align:center; margin-top:24px; }
+  .wiz-ok .big{ font-size:56px; }
+  .wiz-resumo{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px 16px; display:grid; gap:6px; font-size:15px; }
+  .wiz-resumo b{ font-variant-numeric:tabular-nums; }
+  .wiz-erro{ color:var(--critical); font-weight:600; font-size:14px; margin:0; }
+  .wiz-erro:empty{ display:none; }
+
   dialog.sheet{
     border:none; padding:0; width:100%; max-width:520px; margin:auto auto 0; max-height:94vh; overflow:auto;
     border-radius:18px 18px 0 0; background:var(--surface); color:var(--text-primary); box-shadow:var(--shadow);
@@ -488,7 +547,7 @@
 <div class="page">
   <header class="topbar">
     <div class="topbar-title">
-      <h1>Orçamento Doméstico</h1>
+      <h1>Conciliação</h1>
       <div class="topbar-sub" id="mes-label">—</div>
     </div>
     <div class="income-box">
@@ -533,7 +592,7 @@
     <div class="summary-row only-desktop" id="summary-row-1"></div>
 
     <div class="only-mobile">
-      <button type="button" class="btn-add btn-big" id="m-add-btn">＋ Adicionar despesa</button>
+      <button type="button" class="btn-add btn-big" id="m-add-btn">＋ Novo lançamento</button>
       <div id="m-list"></div>
     </div>
 
@@ -729,6 +788,15 @@
         <button type="submit" class="btn-add btn-big" id="m-save">Salvar despesa</button>
       </div>
     </form>
+  </dialog>
+
+  <dialog id="wiz" class="wiz" aria-labelledby="wiz-title">
+    <div class="wiz-top">
+      <button type="button" class="wiz-nav" id="wiz-back" aria-label="Voltar">‹</button>
+      <div class="wiz-dots" id="wiz-dots" aria-hidden="true"></div>
+      <button type="button" class="wiz-nav" id="wiz-close" aria-label="Fechar">✕</button>
+    </div>
+    <div class="wiz-body" id="wiz-body"></div>
   </dialog>
 
   <div id="tooltip" class="tooltip" hidden></div>
@@ -2327,9 +2395,10 @@
   function dedupeDesc(s){ return normalizeText(s).replace(/[^a-z0-9]+/g,""); }
 
   function buildDedupeIndex(){
-    var idx = { parcela:{}, exact:{}, semData:{} };
+    var idx = { parcela:{}, exact:{}, semData:{}, manual:{} };
     STATE.items.forEach(function(it){
       var d = dedupeDesc(it.descOriginal || it.desc), v = (Number(it.valor)||0).toFixed(2);
+      if(it.origem==="manual" && it.data) idx.manual[it.data+"|"+Math.abs(Number(it.valor)||0).toFixed(2)] = true;
       if((Number(it.parcelaTotal)||1)>1) idx.parcela[d+"|"+v+"|"+it.parcelaIndex+"/"+it.parcelaTotal+"|"+it.mesRef] = true;
       else if(it.data) idx.exact[it.data+"|"+d+"|"+v] = true;
       else idx.semData[d+"|"+v+"|"+it.mesRef] = true;
@@ -2402,6 +2471,7 @@
       if(PAGAMENTO_FATURA_RE.test(n)) reasons.push("pagamento de fatura");
       if(INVESTIMENTO_RE.test(n)) reasons.push("investimento");
       if(isDuplicate(index, tx, valor, mesKey)) reasons.push("já lançado");
+      else if(tx.data && !isCredit && index.manual[tx.data+"|"+Math.abs(valor).toFixed(2)]) reasons.push("já lançado à mão");
       if(tx.suspect) reasons.push("conferir descrição");
       var categoria = st.categoria || guessCategoria(tx.desc, tx.hint);
       return {
@@ -2423,7 +2493,7 @@
     var rowsHtml = rows.map(function(r){
       var tx = r.tx;
       var tags = r.reasons.map(function(x){
-        var warn = x==="conferir descrição" || x==="já lançado";
+        var warn = x==="conferir descrição" || x==="já lançado" || x==="já lançado à mão";
         return '<span class="imp-tag'+(warn?" warn":"")+'">'+escapeXml(x)+'</span>';
       }).join("");
       r.info.forEach(function(x){ tags += '<span class="imp-tag">'+escapeXml(x)+'</span>'; });
@@ -2478,13 +2548,17 @@
       '</div>';
 
     function recompute(){
-      var total = 0, count = 0, meses = {};
-      rows.forEach(function(r){ if(r.checked){ total += r.valor; count++; meses[r.mesKey] = true; } });
+      var total = 0, count = 0, meses = {}, aMao = 0, nAMao = 0;
+      rows.forEach(function(r){
+        if(r.checked){ total += r.valor; count++; meses[r.mesKey] = true; }
+        else if(r.reasons.indexOf("já lançado à mão")>-1){ aMao += r.valor; nAMao++; }
+      });
       var checkEl = document.getElementById("fatura-check-row");
       var stated = doc.total;
-      var txt = "Soma dos "+count+" item(ns) selecionado(s): "+formatMoney(total);
+      var txt = "Soma dos "+count+" item(ns) selecionado(s): "+formatMoney(total)+
+        (nAMao ? " + "+formatMoney(aMao)+" já lançado(s) à mão ("+nAMao+")" : "");
       if(stated!=null){
-        var match = Math.abs(total-stated) < 0.01;
+        var match = Math.abs(total+aMao-stated) < 0.01;
         checkEl.className = "fatura-check-row " + (match ? "match" : "mismatch");
         checkEl.textContent = (match ? "✓ " : "⚠ ") + txt + " — total informado pela fatura: "+formatMoney(stated);
       } else {
@@ -2963,7 +3037,7 @@
     refreshMonthView();
   });
 
-  document.getElementById("m-add-btn").addEventListener("click", function(){ openExpenseForm(null); });
+  document.getElementById("m-add-btn").addEventListener("click", function(){ abrirLancamento(null); });
   document.getElementById("m-list").addEventListener("click", function(e){
     var b = e.target.closest(".m-item");
     if(b) openExpenseForm(b.getAttribute("data-id"));
@@ -3085,6 +3159,279 @@
     setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
   });
 
+  /* ---------- lançamento rápido (celular): categoria → nome → valor → data → cartão/conta ---------- */
+
+  var CAT_ICONE = {
+    "Moradia":"🏠", "Contas (água/luz/net)":"💡", "Mercado":"🛒", "Alimentação":"🍽️", "Delivery":"🛵",
+    "Transporte":"🚗", "Saúde":"💊", "Educação":"🎓", "Lazer":"🎉", "Viagem":"✈️", "Assinaturas":"🔁",
+    "Compras":"🛍️", "Vestuário":"👕", "Cuidados pessoais":"💇", "Pets":"🐾", "Seguros":"🛡️",
+    "Impostos e taxas":"🧾", "Tarifas e juros":"🏦", "Presentes e doações":"🎁", "Transferências":"💸", "Outros":"📦"
+  };
+  // O cartão do Pedro fecha por volta do dia 19 e vence no dia 26: compra até o dia 19 entra na
+  // fatura que vence no mesmo mês; depois disso, na do mês seguinte.
+  var DIA_FECHAMENTO_CARTAO = 19;
+  var WIZ_PASSOS = ["categoria","nome","valor","data","meio"];
+  var W = null;
+  var wiz = { dlg: document.getElementById("wiz"), body: document.getElementById("wiz-body"),
+              dots: document.getElementById("wiz-dots"), back: document.getElementById("wiz-back") };
+
+  function isoDe(d){ return mesKeyOf(d)+"-"+String(d.getDate()).padStart(2,"0"); }
+  function hojeIso(){ return isoDe(new Date()); }
+  function ontemIso(){ var d = new Date(); d.setDate(d.getDate()-1); return isoDe(d); }
+  function mesDoVencimento(dataIso, meio){
+    var d = isoToDate(dataIso);
+    if(meio==="cartao" && d.getDate()>DIA_FECHAMENTO_CARTAO) return addMonthsToKey(mesKeyOf(d), 1);
+    return mesKeyOf(d);
+  }
+  function fmtValorInput(v){ return (Math.round(v*100)/100).toFixed(2).replace(".",","); }
+
+  function categoriasOrdenadas(){
+    var uso = {};
+    STATE.items.forEach(function(it){ if(it.categoria) uso[it.categoria] = (uso[it.categoria]||0)+1; });
+    return CATEGORIAS.slice().sort(function(a,b){ return (uso[b]||0)-(uso[a]||0) || CATEGORIAS.indexOf(a)-CATEGORIAS.indexOf(b); });
+  }
+
+  // nomes já usados (da categoria escolhida primeiro), do mais usado para o menos usado
+  function sugestoesNome(categoria, texto){
+    var q = normalizeText(texto).trim(), mapa = {};
+    STATE.items.forEach(function(it){
+      var nome = (it.desc||"").trim();
+      if(!nome) return;
+      var k = descKey(nome);
+      if(!mapa[k]) mapa[k] = { nome:nome, n:0, mesmaCat:0, ultimo:0, valor:0 };
+      var m = mapa[k];
+      m.n++;
+      if(it.categoria===categoria) m.mesmaCat++;
+      if((it.createdAt||0)>=m.ultimo){ m.ultimo = it.createdAt||0; m.valor = Number(it.valor)||0; }
+    });
+    return Object.keys(mapa).map(function(k){ return mapa[k]; })
+      .filter(function(m){ return q ? normalizeText(m.nome).indexOf(q)>-1 : m.mesmaCat>0; })
+      .sort(function(a,b){ return (b.mesmaCat>0)-(a.mesmaCat>0) || b.n-a.n || b.ultimo-a.ultimo; })
+      .slice(0,8);
+  }
+
+  function abrirLancamento(pre){
+    W = { passo:0, categoria:null, desc:"", valor:null, data:null, meio:null, pre: !!pre };
+    if(pre){ Object.keys(pre).forEach(function(k){ if(pre[k]!=null && pre[k]!=="") W[k] = pre[k]; }); }
+    W.passo = proximoPassoVazio(0);
+    if(typeof wiz.dlg.showModal==="function") wiz.dlg.showModal(); else wiz.dlg.setAttribute("open","");
+    renderPasso();
+  }
+  function fecharLancamento(){
+    if(typeof wiz.dlg.close==="function") wiz.dlg.close(); else wiz.dlg.removeAttribute("open");
+    W = null;
+  }
+  function proximoPassoVazio(de){
+    for(var i=de;i<WIZ_PASSOS.length;i++){
+      var p = WIZ_PASSOS[i];
+      if(p==="categoria" && !W.categoria) return i;
+      if(p==="nome" && !W.desc) return i;
+      if(p==="valor" && !(W.valor>0)) return i;
+      if(p==="data" && !W.data) return i;
+      if(p==="meio" && !W.meio) return i;
+    }
+    return WIZ_PASSOS.length; // tudo preenchido: tela de conferir
+  }
+  function avancar(){ W.passo = W.pre ? proximoPassoVazio(W.passo+1) : W.passo+1; renderPasso(); }
+
+  function chips(){
+    var c = [];
+    if(W.categoria) c.push((CAT_ICONE[W.categoria]||"")+" "+W.categoria);
+    if(W.desc) c.push(W.desc);
+    if(W.valor>0) c.push(formatMoney(W.valor));
+    if(W.data) c.push(W.data===hojeIso() ? "Hoje" : (W.data===ontemIso() ? "Ontem" : formatIsoBR(W.data)));
+    return c.length ? '<div class="wiz-chips">'+c.map(function(x){ return '<span class="wiz-chip">'+escapeXml(x)+'</span>'; }).join("")+'</div>' : "";
+  }
+
+  function renderPasso(){
+    if(!W) return;
+    var passo = W.passo>=WIZ_PASSOS.length ? (W.salvo ? "feito" : "conferir") : WIZ_PASSOS[W.passo];
+    wiz.dots.innerHTML = WIZ_PASSOS.map(function(_, i){ return '<span class="'+(i<=W.passo?"on":"")+'"></span>'; }).join("");
+    wiz.back.hidden = W.passo===0 || passo==="feito";
+    var b = wiz.body;
+
+    if(passo==="categoria"){
+      b.innerHTML = '<h2 class="wiz-q" id="wiz-title">Qual a categoria?</h2>'+
+        '<input class="wiz-input" id="wiz-busca" type="search" placeholder="Digite para achar…" autocomplete="off" enterkeyhint="go">'+
+        '<div class="wiz-grid" id="wiz-cats"></div>';
+      var busca = document.getElementById("wiz-busca"), grid = document.getElementById("wiz-cats");
+      var desenhar = function(){
+        var q = normalizeText(busca.value).trim();
+        var lista = categoriasOrdenadas().filter(function(c){ return !q || normalizeText(c).indexOf(q)>-1; });
+        grid.innerHTML = lista.map(function(c, i){
+          return '<button type="button" class="wiz-card'+(q && i===0?" first":"")+'" data-cat="'+escapeAttr(c)+'"><span class="ico">'+(CAT_ICONE[c]||"•")+'</span>'+escapeXml(c)+'</button>';
+        }).join("") || '<p class="empty-note">Nenhuma categoria com esse nome.</p>';
+      };
+      desenhar();
+      busca.addEventListener("input", desenhar);
+      busca.addEventListener("keydown", function(e){
+        if(e.key==="Enter"){ var f = grid.querySelector(".wiz-card"); if(f){ e.preventDefault(); f.click(); } }
+      });
+      grid.addEventListener("click", function(e){
+        var c = e.target.closest(".wiz-card"); if(!c) return;
+        W.categoria = c.dataset.cat; avancar();
+      });
+      setTimeout(function(){ busca.focus(); }, 60);
+      return;
+    }
+
+    if(passo==="nome"){
+      b.innerHTML = '<h2 class="wiz-q" id="wiz-title">Nome da despesa</h2>'+chips()+
+        '<input class="wiz-input" id="wiz-nome" type="text" placeholder="Ex.: Uber, Mercado, iFood" autocomplete="off" enterkeyhint="next" value="'+escapeAttr(W.desc||"")+'">'+
+        '<div class="wiz-sugs" id="wiz-sugs"></div>'+
+        '<button type="button" class="btn-add btn-big wiz-next" id="wiz-ok">Continuar</button>';
+      var nome = document.getElementById("wiz-nome"), sugs = document.getElementById("wiz-sugs"), ok = document.getElementById("wiz-ok");
+      var lista = [];
+      var desenharS = function(){
+        lista = sugestoesNome(W.categoria, nome.value);
+        sugs.innerHTML = lista.map(function(m, i){
+          return '<button type="button" class="wiz-sug" data-i="'+i+'"><span>'+escapeXml(m.nome)+'</span><small>'+(m.valor ? "último "+formatMoney(m.valor) : "")+'</small></button>';
+        }).join("");
+        ok.disabled = !nome.value.trim();
+      };
+      desenharS();
+      nome.addEventListener("input", desenharS);
+      sugs.addEventListener("click", function(e){
+        var s2 = e.target.closest(".wiz-sug"); if(!s2) return;
+        var m = lista[+s2.dataset.i];
+        W.desc = m.nome;
+        if(!(W.valor>0) && m.valor>0) W.valorSugerido = m.valor;
+        avancar();
+      });
+      var seguir = function(){ if(!nome.value.trim()) return; W.desc = nome.value.trim(); avancar(); };
+      ok.addEventListener("click", seguir);
+      nome.addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); seguir(); } });
+      setTimeout(function(){ nome.focus(); }, 60);
+      return;
+    }
+
+    if(passo==="valor"){
+      var ini = W.valor>0 ? fmtValorInput(W.valor) : "";
+      b.innerHTML = '<h2 class="wiz-q" id="wiz-title">Qual o valor?</h2>'+chips()+
+        '<div class="wiz-money"><span>R$</span><input id="wiz-valor" type="text" inputmode="decimal" placeholder="0,00" autocomplete="off" enterkeyhint="next" value="'+ini+'"></div>'+
+        (W.valorSugerido && !ini ? '<button type="button" class="wiz-link" id="wiz-usar-ultimo">Usar o último valor: '+formatMoney(W.valorSugerido)+'</button>' : '')+
+        '<p class="wiz-erro" id="wiz-erro"></p>'+
+        '<button type="button" class="btn-add btn-big wiz-next" id="wiz-ok">Continuar</button>';
+      var inp = document.getElementById("wiz-valor");
+      var seguirV = function(){
+        var v = Math.abs(parseAmount(inp.value));
+        if(isNaN(v) || v<=0){ document.getElementById("wiz-erro").textContent = "Digite o valor da despesa."; inp.focus(); return; }
+        W.valor = Math.round(v*100)/100; avancar();
+      };
+      document.getElementById("wiz-ok").addEventListener("click", seguirV);
+      inp.addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); seguirV(); } });
+      var ult = document.getElementById("wiz-usar-ultimo");
+      if(ult) ult.addEventListener("click", function(){ W.valor = W.valorSugerido; avancar(); });
+      setTimeout(function(){ inp.focus(); }, 60);
+      return;
+    }
+
+    if(passo==="data"){
+      var h = isoToDate(hojeIso()), o = isoToDate(ontemIso());
+      b.innerHTML = '<h2 class="wiz-q" id="wiz-title">Quando foi?</h2>'+chips()+
+        '<div class="wiz-grid">'+
+          '<button type="button" class="wiz-big" data-data="'+hojeIso()+'">Hoje<small>'+formatIsoBR(hojeIso()).slice(0,5)+'</small></button>'+
+          '<button type="button" class="wiz-big" data-data="'+ontemIso()+'">Ontem<small>'+formatIsoBR(ontemIso()).slice(0,5)+'</small></button>'+
+        '</div>'+
+        '<button type="button" class="wiz-link" id="wiz-outra">Outra data</button>'+
+        '<div id="wiz-outra-box" hidden><input class="wiz-input" id="wiz-data" type="date" max="'+hojeIso()+'"><button type="button" class="btn-add btn-big" id="wiz-ok-data" style="margin-top:10px">Continuar</button></div>';
+      b.querySelectorAll(".wiz-big").forEach(function(btn){ btn.addEventListener("click", function(){ W.data = btn.dataset.data; avancar(); }); });
+      document.getElementById("wiz-outra").addEventListener("click", function(){
+        document.getElementById("wiz-outra-box").hidden = false; document.getElementById("wiz-data").focus();
+      });
+      document.getElementById("wiz-ok-data").addEventListener("click", function(){
+        var v = document.getElementById("wiz-data").value; if(!v) return; W.data = v; avancar();
+      });
+      return;
+    }
+
+    if(passo==="meio"){
+      b.innerHTML = '<h2 class="wiz-q" id="wiz-title">Pagou com?</h2>'+chips()+
+        '<button type="button" class="wiz-big" data-meio="cartao">💳 Cartão de crédito</button>'+
+        '<button type="button" class="wiz-big" data-meio="conta">🏦 Conta corrente<small>débito, Pix</small></button>';
+      b.querySelectorAll(".wiz-big").forEach(function(btn){ btn.addEventListener("click", function(){ W.meio = btn.dataset.meio; salvarLancamento(); }); });
+      return;
+    }
+
+    if(passo==="conferir"){
+      b.innerHTML = '<h2 class="wiz-q" id="wiz-title">Confere e salva</h2>'+
+        '<div class="wiz-resumo">'+
+          '<div>'+(CAT_ICONE[W.categoria]||"")+' '+escapeXml(W.categoria)+'</div>'+
+          '<div><b>'+escapeXml(W.desc)+'</b> — <b>'+formatMoney(W.valor)+'</b></div>'+
+          '<div>'+formatIsoBR(W.data)+' · '+(W.meio==="cartao" ? "Cartão de crédito" : "Conta corrente")+'</div>'+
+        '</div>'+
+        '<button type="button" class="btn-add btn-big wiz-next" id="wiz-salvar">Salvar lançamento</button>';
+      document.getElementById("wiz-salvar").addEventListener("click", salvarLancamento);
+      return;
+    }
+
+    if(passo==="feito"){
+      var mesV = mesDoVencimento(W.data, W.meio);
+      b.innerHTML = '<div class="wiz-ok"><div class="big">✓</div><h2 class="wiz-q" id="wiz-title">Lançado!</h2></div>'+
+        '<div class="wiz-resumo">'+
+          '<div>'+(CAT_ICONE[W.categoria]||"")+' '+escapeXml(W.categoria)+' · <b>'+escapeXml(W.desc)+'</b></div>'+
+          '<div><b>'+formatMoney(W.valor)+'</b> · '+formatIsoBR(W.data)+' · '+(W.meio==="cartao" ? "Cartão de crédito" : "Conta corrente")+'</div>'+
+          (W.meio==="cartao" ? '<div class="m-item-sub">Entra na fatura que vence em '+escapeXml(mesLabelOf(isoToDate(mesV+"-01")))+'.</div>' : '')+
+        '</div>'+
+        '<button type="button" class="btn-add btn-big" id="wiz-outro">＋ Lançar outra</button>'+
+        '<button type="button" class="btn-ghost" id="wiz-fim" style="min-height:48px">Concluir</button>';
+      document.getElementById("wiz-outro").addEventListener("click", function(){ abrirLancamento(null); });
+      document.getElementById("wiz-fim").addEventListener("click", fecharLancamento);
+    }
+  }
+
+  function salvarLancamento(){
+    var tipo = guessTipo(W.desc, W.categoria);
+    persistNewItems([{
+      desc: W.desc, categoria: W.categoria, tipo: tipo, valor: W.valor, isExample:false, createdAt: Date.now(),
+      mesRef: mesDoVencimento(W.data, W.meio), parcelaTotal:1, parcelaIndex:1, parcelaGrupo:null,
+      data: W.data, origem:"manual", meio: W.meio
+    }]);
+    learnMerchantRule(W.desc, W.categoria, tipo);
+    try{ localStorage.setItem("orcamento-ultimo-meio", W.meio); } catch(e){}
+    W.salvo = true;
+    W.passo = WIZ_PASSOS.length;
+    refreshMonthView();
+    renderPasso();
+  }
+
+  wiz.back.addEventListener("click", function(){
+    if(!W || W.passo===0) return;
+    W.passo = Math.min(W.passo, WIZ_PASSOS.length)-1;
+    var p = WIZ_PASSOS[W.passo];
+    if(p==="meio") W.meio = null;
+    renderPasso();
+  });
+  document.getElementById("wiz-close").addEventListener("click", fecharLancamento);
+  wiz.dlg.addEventListener("cancel", function(){ W = null; });
+
+  // Link de lançamento (para o JARVIS ou um atalho): abre a tela já preenchida e só grava depois
+  // que a pessoa toca em salvar. Ex.: ?lancar=1&desc=Uber&valor=25,90&cat=Transporte&data=hoje&meio=cartao
+  function lancamentoPeloLink(){
+    var q;
+    try{ q = new URLSearchParams(location.search); } catch(e){ return; }
+    if(!q.has("lancar")) return;
+    var pre = {};
+    var cat = q.get("cat") || q.get("categoria");
+    if(cat){
+      var nc = normalizeText(cat).trim();
+      pre.categoria = CATEGORIAS.filter(function(c){ return normalizeText(c)===nc; })[0]
+        || CATEGORIAS.filter(function(c){ return normalizeText(c).indexOf(nc)===0 || nc.indexOf(normalizeText(c))===0; })[0] || null;
+    }
+    pre.desc = (q.get("desc") || q.get("nome") || "").trim();
+    if(!pre.categoria && pre.desc){ var g = guessCategoria(pre.desc, null); if(g!=="Outros") pre.categoria = g; }
+    var v = Math.abs(parseAmount(q.get("valor")||""));
+    if(v>0) pre.valor = Math.round(v*100)/100;
+    var d = normalizeText(q.get("data")||"").trim();
+    if(d==="hoje") pre.data = hojeIso();
+    else if(d==="ontem") pre.data = ontemIso();
+    else if(d){ var pd = parseDateAtStart(d, new Date()); if(pd) pre.data = pd.iso; }
+    var m = normalizeText(q.get("meio")||q.get("pagamento")||"");
+    if(/cart|credit/.test(m)) pre.meio = "cartao"; else if(/conta|debit|pix/.test(m)) pre.meio = "conta";
+    try{ history.replaceState(null, "", location.pathname); } catch(e){}
+    abrirLancamento(pre);
+  }
+
   /* ---------- boot ---------- */
 
   store.init().then(function(resolvedDb){
@@ -3106,6 +3453,7 @@
           var val = snap.val() || {};
           STATE.items = Object.keys(val).map(function(key){ return Object.assign({id:key}, val[key]); });
           refreshMonthView();
+          if(!lancamentoPeloLink.feito){ lancamentoPeloLink.feito = true; lancamentoPeloLink(); }
         }, function(e){ console.error(e); });
         merchantRulesRef.on("value", function(snap){
           var val = snap.val() || {};
@@ -3120,6 +3468,7 @@
       currentViewMonth = firstOfMonth(new Date());
       syncRendaInput();
       refreshMonthView();
+      lancamentoPeloLink();
     }
   });
 
