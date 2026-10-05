@@ -12,6 +12,8 @@
   "use strict";
   var HUB_URL = "https://systembria.github.io/hub/";
   var PAPEIS_OK = ["admin"];
+  // Além dos administradores, entram estes logins (o Pedro, dono dos gastos, e o justadm).
+  var USUARIOS_OK = ["justadm","pedro"];
   var SAFE_HOSTS = ["localhost","127.0.0.1","gitpod","preview","genspark"];
   var isSafe = SAFE_HOSTS.some(function(s){ return (location.hostname||"").indexOf(s)!==-1; })
     || location.protocol === "blob:" || location.protocol === "file:";
@@ -30,7 +32,7 @@
   try{ if(typeof JbAuth !== "undefined") user = JbAuth.read(); } catch(e){}
 
   if(!user && !isSafe){ location.replace(HUB_URL + "?_acesso=negado"); }
-  else if(user && PAPEIS_OK.indexOf(user.papel)===-1){
+  else if(user && PAPEIS_OK.indexOf(user.papel)===-1 && USUARIOS_OK.indexOf(String(user.username||"").toLowerCase().trim())===-1){
     if(typeof JbAuth !== "undefined") JbAuth.logout(HUB_URL + "?_acesso=negado");
     else location.replace(HUB_URL + "?_acesso=negado");
   }
