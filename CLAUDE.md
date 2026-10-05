@@ -68,8 +68,8 @@ de continuar. Nunca faça force push na `main`.
 - **Gasto fixo** (botão "Lançar gasto fixo") repete todo mês no mesmo dia e valor, gravado para 24
   meses (`recorrente`, `recGrupo`); "parar" na coluna Parcelas (ou "Parar de repetir" no celular)
   apaga os meses seguintes.
-- **Celular (até 640px):** só as abas Lançamentos e Gráficos, a troca de mês, o botão grande
-  "Novo lançamento" e a lista em cartões. O "Novo lançamento" é um passo a passo em tela cheia, um
+- **Celular (até 640px):** só as abas Lançamentos e Gráficos, a troca de mês, dois botões grandes
+  lado a lado — "Lançar despesa" e "Lançar gasto fixo" — e a lista em cartões. O lançamento é um passo a passo em tela cheia, um
   campo por tela: categoria (cartões, filtra ao digitar, mais usadas primeiro) → nome (sugere os
   nomes já usados) → valor → data (Hoje/Ontem/outra) → cartão de crédito ou conta corrente, que já
   salva. Tocar num gasto da lista abre o formulário de edição.
