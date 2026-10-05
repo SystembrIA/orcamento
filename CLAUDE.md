@@ -72,7 +72,8 @@ de continuar. Nunca faça force push na `main`.
 - **Botões uniformes:** os botões da 1ª linha têm o mesmo tamanho dos da 2ª (40px de altura, fonte 13px
   em negrito); no celular a 1ª linha ocupa a largura toda. **Campos de digitação com fonte de no mínimo
   16px** (senão o iPhone dá zoom ao tocar e não volta) — não bloquear o zoom pela tag viewport.
-- **Computador, 1ª linha também tem** "Lançar despesa" e "Lançar gasto fixo" (abrem o passo a passo).
+- **Computador, 1ª linha também tem** "Lançar despesa" e "Lançar gasto fixo" (abrem o passo a passo),
+  os dois pretos (computador e celular); azul fica só para "＋ Entrada".
 - **Computador, 2ª linha:** Vencendo no mês · Gastos do mês · Tudo · Cartão de crédito · Débito · ‹ mês › ·
   Hoje · Limpar mês. Sem texto explicativo embaixo.
 - **Lista:** uma só, "Lançamentos", em ordem de data, com coluna Tipo (Fixo/Supérfluo) — no celular
