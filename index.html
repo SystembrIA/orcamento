@@ -527,6 +527,8 @@
   @media (min-width:641px){ dialog.wiz{ max-width:520px; height:min(760px,94vh); margin:auto; border-radius:18px; box-shadow:var(--shadow); } }
   dialog.wiz::backdrop{ background:rgba(10,12,16,0.45); }
   dialog.wiz[open]{ display:flex; flex-direction:column; }
+  html.abre-lancar .page{ visibility:hidden; }
+  html.abre-lancar .page dialog.wiz{ visibility:visible; }
   .wiz-top{ display:flex; align-items:center; gap:10px; padding:12px 14px; padding-top:max(12px, env(safe-area-inset-top)); }
   .wiz-nav{ appearance:none; border:none; background:var(--surface); color:var(--text-primary); width:44px; height:44px; border-radius:12px; font-size:22px; cursor:pointer; box-shadow:var(--shadow); flex:none; }
   .wiz-nav[hidden]{ visibility:hidden; display:block; }
@@ -631,6 +633,10 @@
   .btn-danger[hidden]{ display:none; }
 </style>
 
+<script>
+  // celular: abre direto no "Lançar despesa" — esconde a tela de trás até o lançamento abrir (Maikon 13/10)
+  try{ if(!/[?&]lancar=/.test(location.search) && window.matchMedia("(max-width:640px)").matches) document.documentElement.classList.add("abre-lancar"); }catch(e){}
+</script>
 <div class="page">
   <header class="topbar">
     <div class="topbar-title">
@@ -3468,6 +3474,7 @@
     renderPasso();
   }
   function fecharLancamento(){
+    document.documentElement.classList.remove("abre-lancar");
     if(typeof wiz.dlg.close==="function") wiz.dlg.close(); else wiz.dlg.removeAttribute("open");
     W = null;
   }
@@ -3747,7 +3754,7 @@
     renderPasso();
   });
   document.getElementById("wiz-close").addEventListener("click", fecharLancamento);
-  wiz.dlg.addEventListener("cancel", function(){ W = null; });
+  wiz.dlg.addEventListener("cancel", function(){ W = null; document.documentElement.classList.remove("abre-lancar"); });
 
   // Link de lançamento (para o JARVIS ou um atalho): abre a tela já preenchida e só grava depois
   // que a pessoa toca em salvar. Ex.: ?lancar=1&desc=Uber&valor=25,90&cat=Transporte&data=hoje&meio=cartao
@@ -3755,8 +3762,9 @@
     var q;
     try{ q = new URLSearchParams(location.search); } catch(e){ return; }
     if(!q.has("lancar")){
-      // no celular já abre direto no "Lançar despesa" (pedido do Maikon 13/10)
-      if(window.matchMedia && window.matchMedia("(max-width:640px)").matches) abrirLancamento(null);
+      // dados chegaram com o lançamento já aberto: atualiza a ordem das categorias (mais usadas primeiro)
+      if(W && !W.pre && W.passo===0 && !W.categoria){ var bq = document.getElementById("wiz-busca"); if(!bq || !bq.value) renderPasso(); }
+      else if(!W && document.documentElement.classList.contains("abre-lancar")) abrirLancamento(null);
       return;
     }
     var pre = {};
@@ -3781,6 +3789,9 @@
   }
 
   /* ---------- boot ---------- */
+
+  // celular: o lançamento abre na hora, sem esperar o banco
+  if(document.documentElement.classList.contains("abre-lancar")) abrirLancamento(null);
 
   store.init().then(function(resolvedDb){
     if(resolvedDb){

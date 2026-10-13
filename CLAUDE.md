@@ -86,7 +86,8 @@ de continuar. Nunca faça force push na `main`.
   campo por tela: categoria (cartões, filtra ao digitar, mais usadas primeiro) → nome (sugere os
   nomes já usados) → valor → data (Hoje/Ontem/outra) → cartão de crédito ou conta corrente, que já
   salva. Tocar num gasto da lista abre o formulário de edição. **No celular a página já abre direto
-  no "Lançar despesa".** No passo do valor, se o nome já foi usado, o campo **já vem com o último valor**
+  no "Lançar despesa"** — na hora, sem esperar o banco e sem mostrar a tela de trás (classe `abre-lancar`
+  no `<html>`, tirada ao fechar o lançamento). No passo do valor, se o nome já foi usado, o campo **já vem com o último valor**
   (selecionado, é só continuar ou digitar outro). Nos passos nome e valor não há botão "Continuar":
   há uma **setinha "→" do lado do campo, do mesmo tamanho** (quadrada), para digitar e ir sem fechar o
   teclado; no nome, as sugestões ficam embaixo.
