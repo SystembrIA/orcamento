@@ -87,8 +87,9 @@ de continuar. Nunca faça force push na `main`.
   nomes já usados) → valor → data (Hoje/Ontem/outra) → cartão de crédito ou conta corrente, que já
   salva. Tocar num gasto da lista abre o formulário de edição. **No celular a página já abre direto
   no "Lançar despesa".** No passo do valor, se o nome já foi usado, o campo **já vem com o último valor**
-  (selecionado, é só continuar ou digitar outro). O botão "Continuar" fica **logo abaixo do campo**
-  (não no rodapé), para não precisar fechar o teclado.
+  (selecionado, é só continuar ou digitar outro). Nos passos nome e valor não há botão "Continuar":
+  há uma **setinha "→" do lado do campo, do mesmo tamanho** (quadrada), para digitar e ir sem fechar o
+  teclado; no nome, as sugestões ficam embaixo.
 - **Link de lançamento (JARVIS):** `?lancar=1&desc=…&valor=…&cat=…&data=hoje|ontem|dd/mm&meio=cartao|conta`
   abre o passo a passo já preenchido e só grava depois do toque em "Salvar". Compra no cartão
   depois do dia 19 (`DIA_FECHAMENTO_CARTAO`) vai para a fatura do mês seguinte. Na importação, um
