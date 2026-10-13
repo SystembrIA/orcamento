@@ -6,8 +6,8 @@ sem jargão técnico.
 
 ## Acesso
 
-O painel se chama **Conciliação** e abre pelo hub (repositório `SystembrIA/hub`), no atalho
-"Conciliação", que aparece só para os logins `justadm` (Michael) e `pedro` (Pedro Henrique, filho
+O painel se chama **Gastos** (antes "Conciliação") e abre pelo hub (repositório `SystembrIA/hub`), no atalho
+"Gastos", que aparece só para os logins `justadm` (Michael) e `pedro` (Pedro Henrique, filho
 dele). No painel só entram os logins da lista `USUARIOS_OK` no topo do `index.html` (esses dois).
 
 ## Publicação: faça tudo sozinho (autorizado pelo Michael)
