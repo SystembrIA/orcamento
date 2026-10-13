@@ -1294,7 +1294,7 @@
       '<div class="tile"><div class="tile-label"><span class="dot dot-fixo"></span>Gastos fixos</div><div class="tile-value">'+formatMoney(totals.fixo)+'</div><div class="tile-note">'+f.filtro+'</div></div>' +
       '<div class="tile"><div class="tile-label"><span class="dot dot-superfluo"></span>Gastos supérfluos</div><div class="tile-value">'+formatMoney(totals.superfluo)+'</div><div class="tile-note">'+f.filtro+'</div></div>' +
       '<div class="tile tile-total"><div class="tile-label">Total de gastos</div><div class="tile-value">'+formatMoney(totals.total)+'</div><div class="tile-note">'+f.periodo+'</div></div>' +
-      '<div class="tile tile-entrada"><div class="tile-label">Entradas do mês</div><div class="tile-value">'+formatMoney(f.entradas)+'</div><div class="tile-note">'+(f.qtdEntradas ? f.qtdEntradas+' entrada(s)' : 'Lance no botão "Renda"')+'</div></div>' +
+      '<div class="tile tile-entrada"><div class="tile-label">Entradas do mês</div><div class="tile-value">'+formatMoney(f.entradas)+'</div><div class="tile-note">'+(f.qtdEntradas ? f.qtdEntradas+' entrada(s)'+(meioFiltro ? ' · '+FILTRO_LABEL[meioFiltro] : '') : 'Lance no botão "Renda"')+'</div></div>' +
       '<div class="tile tile-saldo '+f.cls+'"><div class="tile-label">Saldo real</div><div class="tile-value">'+formatMoney(f.saldo)+'</div><div class="tile-note">'+f.nota+'</div></div>';
   }
 
@@ -1337,19 +1337,23 @@
     });
   }
 
-  // Fechamento do mês: gastos (no filtro escolhido), entradas e saldo real = entradas − todos os
-  // gastos do mês (cartão + débito), na visão escolhida (vencendo no mês / gastos do mês).
+  // Fechamento do mês: gastos (no filtro escolhido), entradas e saldo real, na visão escolhida
+  // (vencendo no mês / gastos do mês). "Tudo": entradas − todos os gastos (cartão + débito).
+  // "Débito" ou "Cartão" (Maikon 13/10): só as entradas e os gastos daquele meio — entrada sem meio
+  // (salário, Pix recebido) é da conta corrente.
   function fechamentoDoMes(totals){
-    var key = viewedMonthKey(), ents = entradasDoMes(key);
+    var key = viewedMonthKey();
+    var ents = entradasDoMes(key).filter(function(x){ return !meioFiltro || (x.meio||"conta")===meioFiltro; });
     var entradas = ents.reduce(function(s, x){ return s+(Number(x.valor)||0); }, 0);
-    var todos = gastosDoMesTodos(), saldo = entradas - todos;
+    var todos = gastosDoMesTodos();
+    var saldo = entradas - (meioFiltro ? totals.total : todos);
     var mes = mesLabelOf(currentViewMonth).toLowerCase();
     return {
       key:key, lista:ents, entradas:entradas, qtdEntradas:ents.length, todos:todos, saldo:saldo,
       filtro: meioFiltro ? FILTRO_LABEL[meioFiltro] : "cartão + débito",
       periodo: (viewMode==="compra" ? "Gastos feitos em " : "Vencendo em ")+mes+(meioFiltro ? " · "+FILTRO_LABEL[meioFiltro] : ""),
       cls: saldo>=0 ? "is-good" : "is-bad",
-      nota: (saldo>=0 ? "Sobra" : "Falta")+" · entradas − todos os gastos"
+      nota: (saldo>=0 ? "Sobra" : "Falta")+(meioFiltro ? " · só "+FILTRO_LABEL[meioFiltro].replace(/^só /,"") : " · entradas − todos os gastos")
     };
   }
 
@@ -1359,15 +1363,14 @@
       '<div class="fecho-linha"><span><span class="dot dot-fixo"></span> Gastos fixos</span><b>'+formatMoney(totals.fixo)+'</b></div>'+
       '<div class="fecho-linha"><span><span class="dot dot-superfluo"></span> Gastos supérfluos</span><b>'+formatMoney(totals.superfluo)+'</b></div>'+
       '<div class="fecho-linha total"><span>Total de gastos'+(meioFiltro ? ' ('+FILTRO_LABEL[meioFiltro]+')' : '')+'</span><b>'+formatMoney(totals.total)+'</b></div>';
-    if(meioFiltro) h += '<div class="fecho-linha"><span>Todos os gastos do mês (cartão + débito)</span><b>'+formatMoney(f.todos)+'</b></div>';
-    h += '<div class="fecho-linha entrada"><span>Entradas do mês</span><b>+ '+formatMoney(f.entradas)+'</b></div>';
+    h += '<div class="fecho-linha entrada"><span>Entradas do mês'+(meioFiltro ? ' ('+FILTRO_LABEL[meioFiltro]+')' : '')+'</span><b>+ '+formatMoney(f.entradas)+'</b></div>';
     h += f.lista.map(function(x){
       return '<div class="fecho-ent" data-ent="'+escapeAttr(x.id)+'"><span>'+formatIsoBR(x.data).slice(0,5)+' · '+escapeXml(x.desc||"Entrada")+(x.recorrente ? ' <em>(todo mês)</em>' : '')+'</span>'+
         (x.recorrente ? '<button type="button" class="rec-stop" data-ent-parar="'+escapeAttr(x.id)+'" title="Parar de repetir: apaga os próximos meses">parar</button>' : '')+
         '<b>'+formatMoney(x.valor)+'</b><button type="button" class="btn-del" data-ent-del="'+escapeAttr(x.id)+'" aria-label="Excluir entrada '+escapeAttr(x.desc||"")+'" title="Excluir">✕</button></div>';
     }).join("");
     if(!f.lista.length) h += '<p class="fecho-nota">Nenhuma entrada lançada neste mês.</p>';
-    h += '<div class="fecho-linha saldo '+f.cls+'"><span>Saldo real <small class="fecho-nota">(entradas − todos os gastos)</small></span><b>'+formatMoney(f.saldo)+'</b></div>'+
+    h += '<div class="fecho-linha saldo '+f.cls+'"><span>Saldo real <small class="fecho-nota">('+(meioFiltro ? 'entradas − gastos, '+FILTRO_LABEL[meioFiltro] : 'entradas − todos os gastos')+')</small></span><b>'+formatMoney(f.saldo)+'</b></div>'+
       '<button type="button" class="btn-add btn-entrada" data-ent-nova="1">＋ Lançar entrada</button></div>';
     return h;
   }
