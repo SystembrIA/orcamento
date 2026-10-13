@@ -58,9 +58,14 @@ de continuar. Nunca faça force push na `main`.
 - **Dois jeitos de ver o mês:** "Vencendo no mês" (o que vence/é pago no mês — padrão) e "Gastos do
   mês" (pela data da compra). Parcelas contam no mês de cada parcela; gasto sem data fica no mês em
   que vence.
-- **1ª linha (verde-petróleo):** abas Lançamentos · Gráficos · **"＋ Entrada"** (botão azul logo depois de
-  Gráficos, também no celular; no computador mostra o total de entradas do mês) · Linha do tempo · Consultar e o botão
-  "Importar arquivo", que abre direto a escolha do arquivo. Não há mais renda no cabeçalho.
+- **1ª linha (verde-petróleo):** abas Lançamentos · Gráficos · Linha do tempo · **Médias mensais** · Consultar e o
+  botão "Importar arquivo". O botão azul **"＋ Entrada"** fica do lado de "Lançar gasto fixo" (no computador mostra o
+  total de entradas do mês; no celular é o 3º botão ao lado de "Lançar despesa" e "Lançar gasto fixo").
+- **Médias mensais** (aba, também no celular): média por mês de cada categoria (`config/medias/{id}` =
+  `{categoria, valor}`), com editar e excluir; a tabela mostra o gasto do mês atual (cartão + débito, pela data da
+  compra) e quanto falta ou passou. Ao lançar um gasto que faz a categoria passar da média no mês, antes de gravar
+  aparece **tela vermelha com letras brancas** (média, já gasto, este lançamento, total e quanto passa) com
+  "Sim, confirmar lançamento" / "Voltar sem lançar".
 - **Renda = entradas lançadas** (salário, mesada, Pix recebido…): o botão azul "＋ Entrada" (e o "＋ Lançar entrada", também azul)
   abre o mesmo passo a passo dos lançamentos — nome → valor → data → "Só este mês" ou "Todo mês"
   (repete 24 meses, `recorrente`/`recGrupo`, com "parar"). Ficam em `orcamento/config/entradas`

@@ -169,6 +169,26 @@
   .tabs{ overflow-x:auto; }
   @media (max-width:640px){ .tab-btn{ padding:8px 10px; white-space:nowrap; } }
   .tab-panel[hidden]{ display:none; }
+  .btn-entrada-topo{ background:var(--fixo) !important; border-color:var(--fixo) !important; color:#fff !important; }
+  .btn-entrada-topo b{ color:#fff; font-weight:600; opacity:0.9; margin-left:6px; font-variant-numeric:tabular-nums; }
+  .medias-tit{ font-size:18px; margin-bottom:6px; }
+  .media-form{ display:flex; flex-wrap:wrap; gap:10px; align-items:stretch; margin-bottom:16px; }
+  .media-form select{ flex:1 1 220px; min-height:48px; font-size:16px; }
+  .media-valor{ display:flex; align-items:center; gap:6px; border:1.5px solid var(--border); border-radius:12px; padding:0 12px; background:var(--surface); flex:0 1 180px; }
+  .media-valor span{ color:var(--text-muted); font-weight:700; }
+  .media-valor input{ border:none; outline:none; background:transparent; font-size:18px; font-weight:700; width:100%; min-height:46px; font-variant-numeric:tabular-nums; color:var(--text-primary); }
+  .media-form .btn-add, .media-form .btn-ghost{ min-height:48px; }
+  .medias-tab{ width:100%; border-collapse:collapse; font-size:15px; }
+  .medias-tab th{ text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:0.03em; color:var(--text-muted); padding:8px 6px; border-bottom:1px solid var(--border); }
+  .medias-tab td{ padding:10px 6px; border-bottom:1px solid var(--border); vertical-align:middle; }
+  .medias-tab .num{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .medias-tab .acoes{ text-align:right; white-space:nowrap; }
+  .medias-tab .acoes button{ appearance:none; border:1px solid var(--border); background:var(--surface); border-radius:10px; min-height:36px; padding:0 10px; font-weight:700; cursor:pointer; margin-left:4px; }
+  .medias-tab tr.passou td{ color:#b91c1c; font-weight:700; }
+  .media-barra{ height:8px; border-radius:6px; background:var(--surface-2); overflow:hidden; min-width:60px; }
+  .media-barra i{ display:block; height:100%; background:var(--fixo); }
+  .medias-tab tr.passou .media-barra i{ background:#dc2626; }
+  @media (max-width:640px){ .medias-tab .col-barra{ display:none; } .medias-tab{ font-size:14px; } .m-acoes{ grid-template-columns:repeat(3,minmax(0,1fr)) !important; } .m-acoes .btn-big{ font-size:14px; padding:0 6px; } }
 
   .summary-row{
     display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:20px;
@@ -527,6 +547,17 @@
   @media (min-width:641px){ dialog.wiz{ max-width:520px; height:min(760px,94vh); margin:auto; border-radius:18px; box-shadow:var(--shadow); } }
   dialog.wiz::backdrop{ background:rgba(10,12,16,0.45); }
   dialog.wiz[open]{ display:flex; flex-direction:column; }
+  /* aviso de gasto acima da média: tela vermelha, letras brancas */
+  dialog.wiz.wiz-alerta{ background:#dc2626; color:#fff; }
+  dialog.wiz.wiz-alerta .wiz-nav{ background:rgba(255,255,255,0.18); color:#fff; }
+  .alerta-media{ display:flex; flex-direction:column; gap:14px; color:#fff; }
+  .alerta-media h2{ color:#fff; font-size:26px; line-height:1.2; }
+  .alerta-media .big{ font-size:52px; line-height:1; }
+  .alerta-linhas{ display:grid; grid-template-columns:1fr auto; gap:8px 16px; font-size:17px; background:rgba(0,0,0,0.14); border-radius:14px; padding:14px 16px; }
+  .alerta-linhas b{ text-align:right; font-variant-numeric:tabular-nums; }
+  .alerta-linhas .sep{ grid-column:1 / -1; border-top:1px solid rgba(255,255,255,0.35); }
+  .alerta-confirma{ appearance:none; border:none; border-radius:14px; min-height:56px; background:#fff; color:#b91c1c; font-size:17px; font-weight:800; cursor:pointer; }
+  .alerta-voltar{ appearance:none; border:1.5px solid rgba(255,255,255,0.7); border-radius:14px; min-height:52px; background:transparent; color:#fff; font-size:16px; font-weight:700; cursor:pointer; }
   html.abre-lancar .page{ visibility:hidden; }
   html.abre-lancar .page dialog.wiz{ visibility:visible; }
   .wiz-top{ display:flex; align-items:center; gap:10px; padding:12px 14px; padding-top:max(12px, env(safe-area-inset-top)); }
@@ -649,8 +680,8 @@
   <nav class="tabs" role="tablist">
     <button class="tab-btn active" data-tab="lancamentos" role="tab" aria-selected="true">Lançamentos</button>
     <button class="tab-btn" data-tab="graficos" role="tab" aria-selected="false">Gráficos</button>
-    <button type="button" class="renda-tab" id="renda-btn" title="Lançar uma entrada (salário, mesada, Pix recebido…)">＋ Entrada <b id="renda-total">R$ 0</b></button>
     <button class="tab-btn only-desktop" data-tab="timeline" role="tab" aria-selected="false">Linha do tempo</button>
+    <button class="tab-btn" data-tab="medias" role="tab" aria-selected="false">Médias mensais</button>
     <button class="tab-btn only-desktop" data-tab="consultar" role="tab" aria-selected="false">Consultar</button>
     <label class="tab-btn tab-import only-desktop" for="fatura-file-input" title="Fatura ou extrato em PDF, CSV, OFX ou Excel">⬆ Importar arquivo
       <input type="file" id="fatura-file-input" accept=".pdf,.csv,.txt,.ofx,.qfx,.xls,.xlsx,application/pdf,text/csv" hidden>
@@ -658,6 +689,7 @@
   </nav>
   <button type="button" class="btn-add btn-lancar only-desktop">＋ Lançar despesa</button>
   <button type="button" class="btn-add btn-lancar btn-lancar-fixo only-desktop" data-fixo="1">＋ Lançar gasto fixo</button>
+  <button type="button" class="btn-add btn-lancar btn-entrada-topo only-desktop" id="renda-btn" data-entrada="1" title="Lançar uma entrada (salário, mesada, Pix recebido…)">＋ Entrada <b id="renda-total">R$ 0</b></button>
   </div>
 
   <section id="tab-lancamentos" class="tab-panel">
@@ -686,6 +718,7 @@
       <div class="m-acoes">
         <button type="button" class="btn-add btn-big" id="m-add-btn">＋ Lançar despesa</button>
         <button type="button" class="btn-add btn-big btn-lancar-fixo" id="m-add-fixo-btn">＋ Lançar gasto fixo</button>
+        <button type="button" class="btn-add btn-big btn-entrada-topo" data-entrada="1">＋ Entrada</button>
       </div>
       <div id="m-list"></div>
     </div>
@@ -776,6 +809,20 @@
       <p class="empty-note" id="timeline-note">A linha do tempo sempre abre no mês atual e avança a partir dele, usando os gastos já lançados em cada mês (inclusive parcelas futuras). Meses sem lançamentos aparecem com gasto zero. Cada vela mostra o saldo acumulado: verde quando o mês soma, vermelho quando consome reservas.</p>
       <div class="chart-scroll"><div id="chart-timeline"></div></div>
       <div class="split-legend" id="timeline-legend"></div>
+    </div>
+  </section>
+
+  <section id="tab-medias" class="tab-panel" hidden>
+    <div class="expense-card medias-card">
+      <h2 class="medias-tit">Médias mensais por categoria</h2>
+      <p class="empty-note" style="margin:0 0 12px">Quanto quer gastar por mês em cada categoria (cartão + débito, pela data da compra). Ao lançar um gasto que passa da média, aparece um aviso em vermelho para confirmar.</p>
+      <form id="media-form" class="media-form" autocomplete="off">
+        <select id="media-cat" class="consulta-input" aria-label="Categoria"></select>
+        <div class="media-valor"><span>R$</span><input id="media-valor" type="text" inputmode="decimal" placeholder="0,00" aria-label="Média por mês"></div>
+        <button type="submit" class="btn-add" id="media-salvar">Salvar média</button>
+        <button type="button" class="btn-ghost" id="media-cancelar" hidden>Cancelar</button>
+      </form>
+      <div id="medias-lista"></div>
     </div>
   </section>
 
@@ -1166,6 +1213,27 @@
         ids.forEach(function(id){ delete STATE.config.entradas[id]; });
         saveLocal();
         onConfigChange();
+      }
+    },
+    // Médias mensais por categoria: config/medias/{id} = { categoria, valor, createdAt }
+    salvarMedia: function(id, obj){
+      if(mode==="firebase"){
+        var ref = db.ref(FIREBASE_PATH+"/config/medias");
+        (id ? ref.child(id) : ref.push()).set(obj).catch(function(e){ console.error(e); window.alert("Não consegui gravar a média agora. Tente de novo."); });
+      } else {
+        STATE.config = Object.assign({}, STATE.config);
+        STATE.config.medias = Object.assign({}, STATE.config.medias || {});
+        STATE.config.medias[id || ("local-m-"+Date.now())] = obj;
+        saveLocal(); onConfigChange();
+      }
+    },
+    excluirMedia: function(id){
+      if(mode==="firebase"){
+        db.ref(FIREBASE_PATH+"/config/medias/"+id).remove().catch(function(e){ console.error(e); window.alert("Não consegui excluir agora. Tente de novo."); });
+      } else {
+        STATE.config.medias = Object.assign({}, STATE.config.medias || {});
+        delete STATE.config.medias[id];
+        saveLocal(); onConfigChange();
       }
     },
     setConfig: function(patch){
@@ -1714,6 +1782,7 @@
   }
 
   function updateDerived(){
+    try{ renderMedias(); }catch(e){}
     var totals = computeTotals();
     renderSummaryInto("summary-row-1", totals);
     renderSummaryInto("summary-row-2", totals);
@@ -1741,7 +1810,83 @@
   function onConfigChange(){
     syncRendaInput();
     updateDerived();
+    renderMedias();
   }
+
+  /* ---------- médias mensais por categoria (pedido do Maikon 13/10) ---------- */
+  function mediasLista(){
+    var m = (STATE.config && STATE.config.medias) || {};
+    return Object.keys(m).map(function(k){ return Object.assign({ id:k }, m[k]); })
+      .filter(function(x){ return x.categoria && Number(x.valor)>0; })
+      .sort(function(a,b){ return CATEGORIAS.indexOf(a.categoria)-CATEGORIAS.indexOf(b.categoria); });
+  }
+  function mediaDaCategoria(cat){ return mediasLista().filter(function(x){ return x.categoria===cat; })[0] || null; }
+  // gasto da categoria no mês, pela data da compra (cartão + débito); parcela conta no mês dela
+  function gastoCategoriaNoMes(cat, mesKey){
+    return STATE.items.reduce(function(s, it){
+      if(it.isExample || it.categoria!==cat) return s;
+      var k = (it.data && (Number(it.parcelaTotal)||1)<=1) ? String(it.data).slice(0,7) : (it.mesRef||"");
+      return k===mesKey ? s+(Number(it.valor)||0) : s;
+    }, 0);
+  }
+  // null se não tem média ou não passa; senão os números do aviso
+  function checarMedia(cat, valor, dataIso){
+    var m = mediaDaCategoria(cat); if(!m) return null;
+    var mes = String(dataIso||hojeIso()).slice(0,7);
+    var gasto = gastoCategoriaNoMes(cat, mes), total = gasto + valor;
+    if(total <= Number(m.valor)+0.004) return null;
+    return { categoria:cat, media:Number(m.valor), gasto:gasto, valor:valor, total:total, passa:total-Number(m.valor), mes:mes };
+  }
+  var mediaEditando = null;
+  function renderMedias(){
+    var lista = document.getElementById("medias-lista"), sel = document.getElementById("media-cat");
+    if(!lista || !sel) return;
+    var usadas = mediasLista().map(function(x){ return x.categoria; });
+    var atual = sel.value;
+    sel.innerHTML = '<option value="">Escolha a categoria…</option>'+CATEGORIAS.filter(function(c){
+      return usadas.indexOf(c)===-1 || (mediaEditando && mediaEditando.categoria===c);
+    }).map(function(c){ return '<option value="'+escapeAttr(c)+'"'+(c===atual?' selected':'')+'>'+(CAT_ICONE[c]||"")+' '+escapeXml(c)+'</option>'; }).join("");
+    var mes = hojeIso().slice(0,7), mesTxt = mesLabelOf(isoToDate(mes+"-01")).toLowerCase();
+    var ms = mediasLista();
+    lista.innerHTML = ms.length ? '<table class="medias-tab"><thead><tr><th>Categoria</th><th class="num">Média/mês</th><th class="num">Gasto em '+escapeXml(mesTxt)+'</th><th class="num">Falta / passou</th><th class="col-barra"></th><th></th></tr></thead><tbody>'+
+      ms.map(function(x){
+        var g = gastoCategoriaNoMes(x.categoria, mes), dif = Number(x.valor)-g, pct = Math.min(100, Math.max(0, g/Number(x.valor)*100));
+        return '<tr class="'+(dif<0?"passou":"")+'"><td>'+(CAT_ICONE[x.categoria]||"")+' '+escapeXml(x.categoria)+'</td>'+
+          '<td class="num">'+formatMoney(Number(x.valor))+'</td><td class="num">'+formatMoney(g)+'</td>'+
+          '<td class="num">'+(dif<0 ? "passou "+formatMoney(-dif) : "falta "+formatMoney(dif))+'</td>'+
+          '<td class="col-barra"><div class="media-barra"><i style="width:'+pct.toFixed(0)+'%"></i></div></td>'+
+          '<td class="acoes"><button type="button" data-media-edit="'+escapeAttr(x.id)+'">Editar</button><button type="button" data-media-del="'+escapeAttr(x.id)+'">Excluir</button></td></tr>';
+      }).join("")+'</tbody></table>' : '<p class="empty-note">Nenhuma média cadastrada ainda.</p>';
+  }
+  (function(){
+    var form = document.getElementById("media-form"); if(!form) return;
+    var cancelar = document.getElementById("media-cancelar");
+    function limpar(){ mediaEditando = null; document.getElementById("media-valor").value = ""; cancelar.hidden = true; document.getElementById("media-salvar").textContent = "Salvar média"; renderMedias(); document.getElementById("media-cat").value = ""; }
+    form.addEventListener("submit", function(e){
+      e.preventDefault();
+      var cat = document.getElementById("media-cat").value, v = Math.abs(parseAmount(document.getElementById("media-valor").value));
+      if(!cat){ window.alert("Escolha a categoria."); return; }
+      if(isNaN(v) || v<=0){ window.alert("Digite o valor da média por mês."); return; }
+      store.salvarMedia(mediaEditando ? mediaEditando.id : null, { categoria:cat, valor: Math.round(v*100)/100, createdAt: mediaEditando ? (mediaEditando.createdAt||Date.now()) : Date.now() });
+      limpar();
+    });
+    cancelar.addEventListener("click", limpar);
+    document.getElementById("medias-lista").addEventListener("click", function(e){
+      var ed = e.target.closest("[data-media-edit]"), del = e.target.closest("[data-media-del]");
+      if(ed){
+        mediaEditando = mediasLista().filter(function(x){ return x.id===ed.dataset.mediaEdit; })[0] || null; if(!mediaEditando) return;
+        renderMedias();
+        document.getElementById("media-cat").value = mediaEditando.categoria;
+        document.getElementById("media-valor").value = fmtValorInput(Number(mediaEditando.valor));
+        document.getElementById("media-salvar").textContent = "Salvar alteração"; cancelar.hidden = false;
+        document.getElementById("media-valor").focus();
+      }
+      if(del){
+        var x = mediasLista().filter(function(y){ return y.id===del.dataset.mediaDel; })[0]; if(!x) return;
+        if(window.confirm("Excluir a média de "+x.categoria+"?")) store.excluirMedia(x.id);
+      }
+    });
+  })();
 
   /* ---------- month navigation ---------- */
 
@@ -1810,6 +1955,7 @@
         panel.hidden = panel.id !== "tab-"+btn.dataset.tab;
       });
       if(btn.dataset.tab==="consultar"){ renderConsulta(); renderBase(); }
+      if(btn.dataset.tab==="medias") renderMedias();
     });
   });
 
@@ -3012,7 +3158,7 @@
     });
   });
 
-  document.getElementById("renda-btn").addEventListener("click", function(){ abrirLancamento(null, { entrada:true }); });
+  document.querySelectorAll("[data-entrada]").forEach(function(b){ b.addEventListener("click", function(){ abrirLancamento(null, { entrada:true }); }); });
 
   // botões do fechamento (lançar, excluir e parar de repetir entradas), no computador e no celular
   function cliqueFecho(e){
@@ -3475,6 +3621,7 @@
   }
   function fecharLancamento(){
     document.documentElement.classList.remove("abre-lancar");
+    wiz.dlg.classList.remove("wiz-alerta");
     if(typeof wiz.dlg.close==="function") wiz.dlg.close(); else wiz.dlg.removeAttribute("open");
     W = null;
   }
@@ -3505,6 +3652,7 @@
 
   function renderPasso(){
     if(!W) return;
+    wiz.dlg.classList.remove("wiz-alerta");
     var passo = W.passo>=WIZ_PASSOS.length ? (W.salvo ? "feito" : "conferir") : WIZ_PASSOS[W.passo];
     wiz.dots.innerHTML = WIZ_PASSOS.map(function(_, i){ return '<span class="'+(i<=W.passo?"on":"")+'"></span>'; }).join("");
     wiz.back.hidden = W.passo===0 || passo==="feito";
@@ -3615,7 +3763,7 @@
       b.innerHTML = '<h2 class="wiz-q" id="wiz-title">Pagou com?</h2>'+chips()+
         '<button type="button" class="wiz-big" data-meio="cartao">💳 Cartão de crédito</button>'+
         '<button type="button" class="wiz-big" data-meio="conta">🏦 Conta corrente<small>débito, Pix</small></button>';
-      b.querySelectorAll(".wiz-big").forEach(function(btn){ btn.addEventListener("click", function(){ W.meio = btn.dataset.meio; salvarLancamento(); }); });
+      b.querySelectorAll(".wiz-big").forEach(function(btn){ btn.addEventListener("click", function(){ W.meio = btn.dataset.meio; salvarOuAvisar(); }); });
       return;
     }
 
@@ -3649,7 +3797,7 @@
           '<div>'+formatIsoBR(W.data)+' · '+(W.meio==="cartao" ? "Cartão de crédito" : "Conta corrente")+'</div>'+
         '</div>'+
         '<button type="button" class="btn-add btn-big wiz-next" id="wiz-salvar">Salvar lançamento</button>';
-      document.getElementById("wiz-salvar").addEventListener("click", salvarLancamento);
+      document.getElementById("wiz-salvar").addEventListener("click", salvarOuAvisar);
       return;
     }
 
@@ -3721,6 +3869,34 @@
     W.salvo = true;
     W.passo = WIZ_PASSOS.length;
     renderPasso();
+  }
+
+  // passou da média da categoria no mês: tela vermelha pedindo confirmação antes de gravar
+  function salvarOuAvisar(){
+    var a = W.entrada ? null : checarMedia(W.categoria, W.valor, W.data);
+    if(!a){ salvarLancamento(); return; }
+    var mesTxt = mesLabelOf(isoToDate(a.mes+"-01")).toLowerCase();
+    wiz.dlg.classList.add("wiz-alerta");
+    wiz.back.hidden = true;
+    wiz.body.innerHTML = '<div class="alerta-media">'+
+      '<div class="big">⚠️</div>'+
+      '<h2 id="wiz-title">Gasto acima da média de '+escapeXml(a.categoria)+'</h2>'+
+      '<div class="alerta-linhas">'+
+        '<span>Média do mês</span><b>'+formatMoney(a.media)+'</b>'+
+        '<span>Já gasto em '+escapeXml(mesTxt)+'</span><b>'+formatMoney(a.gasto)+'</b>'+
+        '<span>Este lançamento ('+escapeXml(W.desc)+')</span><b>'+formatMoney(a.valor)+'</b>'+
+        '<span class="sep"></span>'+
+        '<span>Total com este</span><b>'+formatMoney(a.total)+'</b>'+
+        '<span>Passa da média em</span><b>'+formatMoney(a.passa)+'</b>'+
+      '</div>'+
+      '<button type="button" class="alerta-confirma" id="alerta-sim">Sim, confirmar lançamento</button>'+
+      '<button type="button" class="alerta-voltar" id="alerta-nao">Voltar sem lançar</button>'+
+    '</div>';
+    document.getElementById("alerta-sim").addEventListener("click", function(){ wiz.dlg.classList.remove("wiz-alerta"); salvarLancamento(); });
+    document.getElementById("alerta-nao").addEventListener("click", function(){
+      wiz.dlg.classList.remove("wiz-alerta");
+      W.meio = null; W.passo = WIZ_PASSOS.indexOf("valor"); renderPasso();
+    });
   }
 
   function salvarLancamento(){
