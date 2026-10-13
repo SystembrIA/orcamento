@@ -570,6 +570,7 @@
   .wiz-big small{ font-size:13px; font-weight:600; color:var(--text-muted); }
   .wiz-big:active, .wiz-big:focus-visible{ border-color:var(--fixo); outline:none; }
   .wiz-next{ margin-top:auto; }
+  .wiz-perto{ margin-top:0; } /* Continuar logo abaixo do campo, sem precisar fechar o teclado */
   .wiz-next[disabled]{ opacity:0.4; }
   .wiz-link{ appearance:none; background:none; border:none; color:var(--fixo); font-weight:700; font-size:15px; padding:10px 0; cursor:pointer; text-align:left; }
   .wiz-ok{ text-align:center; margin-top:24px; }
@@ -3522,8 +3523,8 @@
     if(passo==="nome"){
       b.innerHTML = '<h2 class="wiz-q" id="wiz-title">'+(W.entrada ? "De onde veio a entrada?" : "Nome da despesa")+'</h2>'+chips()+
         '<input class="wiz-input" id="wiz-nome" type="text" placeholder="'+(W.entrada ? "Ex.: Salário, Mesada, Pix recebido" : "Ex.: Uber, Mercado, iFood")+'" autocomplete="off" enterkeyhint="next" value="'+escapeAttr(W.desc||"")+'">'+
-        '<div class="wiz-sugs" id="wiz-sugs"></div>'+
-        '<button type="button" class="btn-add btn-big wiz-next" id="wiz-ok">Continuar</button>';
+        '<button type="button" class="btn-add btn-big wiz-perto" id="wiz-ok">Continuar</button>'+
+        '<div class="wiz-sugs" id="wiz-sugs"></div>';
       var nome = document.getElementById("wiz-nome"), sugs = document.getElementById("wiz-sugs"), ok = document.getElementById("wiz-ok");
       var lista = [];
       var desenharS = function(){
@@ -3539,10 +3540,18 @@
         var s2 = e.target.closest(".wiz-sug"); if(!s2) return;
         var m = lista[+s2.dataset.i];
         W.desc = m.nome;
-        if(!(W.valor>0) && m.valor>0) W.valorSugerido = m.valor;
+        W.valorSugerido = (!(W.valor>0) && m.valor>0) ? m.valor : null;
         avancar();
       });
-      var seguir = function(){ if(!nome.value.trim()) return; W.desc = nome.value.trim(); avancar(); };
+      var seguir = function(){
+        if(!nome.value.trim()) return;
+        W.desc = nome.value.trim(); W.valorSugerido = null;
+        // nome que já foi usado antes: traz o último valor dele
+        var igual = (W.entrada ? sugestoesEntrada(W.desc) : sugestoesNome(W.categoria, W.desc)).filter(function(m){ return descKey(m.nome)===descKey(W.desc); })[0];
+        if(igual) W.desc = igual.nome; // mesmo nome de sempre (sem variar maiúsculas)
+        if(igual && igual.valor>0 && !(W.valor>0)) W.valorSugerido = igual.valor;
+        avancar();
+      };
       ok.addEventListener("click", seguir);
       nome.addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); seguir(); } });
       setTimeout(function(){ nome.focus(); }, 60);
@@ -3550,12 +3559,12 @@
     }
 
     if(passo==="valor"){
-      var ini = W.valor>0 ? fmtValorInput(W.valor) : "";
+      var ini = W.valor>0 ? fmtValorInput(W.valor) : (W.valorSugerido>0 ? fmtValorInput(W.valorSugerido) : "");
       b.innerHTML = '<h2 class="wiz-q" id="wiz-title">Qual o valor?</h2>'+chips()+
         '<div class="wiz-money"><span>R$</span><input id="wiz-valor" type="text" inputmode="decimal" placeholder="0,00" autocomplete="off" enterkeyhint="next" value="'+ini+'"></div>'+
-        (W.valorSugerido && !ini ? '<button type="button" class="wiz-link" id="wiz-usar-ultimo">Usar o último valor: '+formatMoney(W.valorSugerido)+'</button>' : '')+
+        (W.valorSugerido>0 && !(W.valor>0) ? '<p class="m-item-sub" style="margin:0">Último valor desta despesa. Toque em Continuar ou digite outro.</p>' : '')+
         '<p class="wiz-erro" id="wiz-erro"></p>'+
-        '<button type="button" class="btn-add btn-big wiz-next" id="wiz-ok">Continuar</button>';
+        '<button type="button" class="btn-add btn-big wiz-perto" id="wiz-ok">Continuar</button>';
       var inp = document.getElementById("wiz-valor");
       var seguirV = function(){
         var v = Math.abs(parseAmount(inp.value));
@@ -3564,9 +3573,7 @@
       };
       document.getElementById("wiz-ok").addEventListener("click", seguirV);
       inp.addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); seguirV(); } });
-      var ult = document.getElementById("wiz-usar-ultimo");
-      if(ult) ult.addEventListener("click", function(){ W.valor = W.valorSugerido; avancar(); });
-      setTimeout(function(){ inp.focus(); }, 60);
+      setTimeout(function(){ inp.focus(); if(inp.value) inp.select(); }, 60);
       return;
     }
 
@@ -3739,7 +3746,11 @@
   function lancamentoPeloLink(){
     var q;
     try{ q = new URLSearchParams(location.search); } catch(e){ return; }
-    if(!q.has("lancar")) return;
+    if(!q.has("lancar")){
+      // no celular já abre direto no "Lançar despesa" (pedido do Maikon 13/10)
+      if(window.matchMedia && window.matchMedia("(max-width:640px)").matches) abrirLancamento(null);
+      return;
+    }
     var pre = {};
     var cat = q.get("cat") || q.get("categoria");
     if(cat){

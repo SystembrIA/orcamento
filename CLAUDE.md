@@ -85,7 +85,10 @@ de continuar. Nunca faça force push na `main`.
   lado a lado — "Lançar despesa" e "Lançar gasto fixo" — e a lista em cartões. O lançamento é um passo a passo em tela cheia, um
   campo por tela: categoria (cartões, filtra ao digitar, mais usadas primeiro) → nome (sugere os
   nomes já usados) → valor → data (Hoje/Ontem/outra) → cartão de crédito ou conta corrente, que já
-  salva. Tocar num gasto da lista abre o formulário de edição.
+  salva. Tocar num gasto da lista abre o formulário de edição. **No celular a página já abre direto
+  no "Lançar despesa".** No passo do valor, se o nome já foi usado, o campo **já vem com o último valor**
+  (selecionado, é só continuar ou digitar outro). O botão "Continuar" fica **logo abaixo do campo**
+  (não no rodapé), para não precisar fechar o teclado.
 - **Link de lançamento (JARVIS):** `?lancar=1&desc=…&valor=…&cat=…&data=hoje|ontem|dd/mm&meio=cartao|conta`
   abre o passo a passo já preenchido e só grava depois do toque em "Salvar". Compra no cartão
   depois do dia 19 (`DIA_FECHAMENTO_CARTAO`) vai para a fatura do mês seguinte. Na importação, um
