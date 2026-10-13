@@ -2306,7 +2306,8 @@
       var p2 = extractParcela(parcelaText);
       if(p2.total>1){ p.idx = p2.idx; p.total = p2.total; }
     }
-    return { data: data, desc: cleanDesc(p.desc) || "(sem descrição)", amount: amount, parcelaIdx: p.idx, parcelaTotal: p.total, hint: hint || null, suspect: false };
+    var dsc = cleanDesc(p.desc).replace(/\(\s*(parc\.?|parcela)?\s*\)/gi, "").replace(/\s{2,}/g, " ").trim();
+    return { data: data, desc: dsc || "(sem descrição)", amount: amount, parcelaIdx: p.idx, parcelaTotal: p.total, hint: hint || null, suspect: false };
   }
 
   /* ---------- importação: leitores por formato ---------- */
@@ -2378,17 +2379,20 @@
   }
 
   function mapHeader(cells){
-    var map = { date:-1, valor:-1, credito:-1, debito:-1, desc:[], categoria:-1, parcela:-1 };
+    var map = { date:-1, valor:-1, credito:-1, debito:-1, desc:[], categoria:-1, parcela:-1, meio:-1, tipo:-1, parcelaDeTipo:false };
     cells.forEach(function(c, i){
       var n = normalizeText(c).trim();
       if(!n) return;
       if(map.date===-1 && /^(data|date|dt)\b/.test(n)) { map.date = i; return; }
       if(/saldo|balance/.test(n)) return;
+      // planilha com cartão e conta juntos: coluna "Débito-Crédito" (ou "Forma de pagamento") diz o meio de cada linha
+      if(map.meio===-1 && /^(debito\W*credito|credito\W*debito|forma( de)? pag|meio( de pag)?\b|cartao\W*conta|conta\W*cartao)/.test(n)) { map.meio = i; return; }
       if(map.valor===-1 && /^(valor|amount|value|vlr|quantia|montante)/.test(n) && !/us\$|usd|dolar/.test(n)) { map.valor = i; return; }
       if(map.credito===-1 && /^(credito|entradas?)\b/.test(n)) { map.credito = i; return; }
       if(map.debito===-1 && /^(debito|saidas?)\b/.test(n)) { map.debito = i; return; }
       if(map.categoria===-1 && /categoria|category/.test(n)) { map.categoria = i; return; }
-      if(map.parcela===-1 && /parcela|installment|^tipo/.test(n)) { map.parcela = i; return; }
+      if(/parcela|installment/.test(n) && (map.parcela===-1 || map.parcelaDeTipo)) { map.parcela = i; map.parcelaDeTipo = false; return; }
+      if(/^tipo/.test(n)){ if(map.tipo===-1) map.tipo = i; if(map.parcela===-1){ map.parcela = i; map.parcelaDeTipo = true; } return; }
       if(/historico|descri|lancamento|estabelecimento|^title$|titulo|memo|^nome|detalhe|favorecido|beneficiario|^local/.test(n)) map.desc.push(i);
     });
     var hasValor = map.valor>-1 || (map.credito>-1 && map.debito>-1);
@@ -2416,7 +2420,13 @@
         }
         if(isNaN(amount) || amount===0) return;
         var desc = map.desc.map(function(c){ return String(cell(r,c)).trim(); }).filter(Boolean).join(" - ");
-        txs.push(makeTx(data, desc, amount, map.categoria>-1 ? String(cell(r,map.categoria)) : null, map.parcela>-1 ? String(cell(r,map.parcela)) : null));
+        var tx = makeTx(data, desc, amount, map.categoria>-1 ? String(cell(r,map.categoria)) : null, map.parcela>-1 ? String(cell(r,map.parcela)) : null);
+        if(map.meio>-1){
+          var m = normalizeText(String(cell(r, map.meio)));
+          tx.meio = /entrada|recebid/.test(m) ? "entrada" : /credito|cartao/.test(m) ? "cartao" : /debito|conta|pix|dinheiro/.test(m) ? "conta" : "";
+        }
+        if(map.tipo>-1) tx.tipoPlanilha = String(cell(r, map.tipo)).trim();
+        txs.push(tx);
       });
     } else {
       // Sem cabeçalho reconhecível: em cada linha, 1ª célula com data, 1ª célula com valor, resto é descrição.
@@ -2434,6 +2444,7 @@
     }
     var blob = normalizeText(fileName+" "+rows.slice(0, hIdx>-1 ? hIdx+1 : 5).map(function(r){ return r.join(" "); }).join(" "));
     var isCard = /fatura|cartao|credit|card/.test(blob);
+    if(map && map.meio>-1) return { source: source, fileName:fileName, kind:"misto", outflowSign:-1, txs:txs, total:null, faturaMonth:null };
     return { source: source, fileName:fileName, kind: isCard ? "cartao" : "conta", outflowSign:null, txs:txs, total:null, faturaMonth:null };
   }
 
@@ -2455,12 +2466,20 @@
   function readExcelDoc(buf, fileName){
     return loadScriptOnce("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js").then(function(){
       var wb = XLSX.read(new Uint8Array(buf), { type:"array", cellDates:true });
-      var best = null;
+      var best = null, mistos = [];
       wb.SheetNames.forEach(function(n){
         var rows = XLSX.utils.sheet_to_json(wb.Sheets[n], { header:1, raw:true, defval:"" });
         var doc = parseTableRows(rows, fileName, "Excel");
+        if(doc.kind==="misto" && doc.txs.length) mistos.push({ aba:n, doc:doc });
         if(!best || doc.txs.length>best.txs.length) best = doc;
       });
+      // planilha com várias abas de lançamentos (cartão e conta por linha): junta todas as abas
+      if(mistos.length){
+        var txs = [];
+        mistos.forEach(function(m){ m.doc.txs.forEach(function(t){ t.aba = m.aba; txs.push(t); }); });
+        return { source:"Planilha · "+mistos.length+" aba(s): "+mistos.map(function(m){ return m.aba; }).join(", "), fileName:fileName,
+                 kind:"misto", outflowSign:-1, txs:txs, total:null, faturaMonth:null };
+      }
       return best;
     });
   }
@@ -2545,7 +2564,35 @@
     return latest ? addMonthsToKey(latest.slice(0,7), 1) : viewedMonthKey();
   }
 
+  // Planilha mista: cartão vai para o mês da fatura (fecha dia 19, vence dia 26), conta para o mês da data.
+  // Parcelas da mesma compra que aparecem em várias abas: a de número maior manda (se a data dela é o
+  // dia 26, é a própria fatura); as anteriores ficam nos meses de antes e só ela cria as próximas.
+  var DIA_VENCIMENTO_CARTAO = 26;
+  function prepararMisto(doc){
+    var grupos = {};
+    doc.txs.forEach(function(t, i){
+      t.mesLinha = (t.meio==="cartao" && t.data) ? mesDoVencimento(t.data, "cartao") : (t.data ? t.data.slice(0,7) : viewedMonthKey());
+      if(t.meio==="cartao" && t.parcelaTotal>1){
+        var k = dedupeDesc(t.desc)+"|"+Math.abs(t.amount).toFixed(2)+"|"+t.parcelaTotal;
+        (grupos[k] = grupos[k] || []).push(i);
+      }
+    });
+    Object.keys(grupos).forEach(function(k){
+      var idxs = grupos[k], ult = idxs.reduce(function(a, b){ return doc.txs[b].parcelaIdx>doc.txs[a].parcelaIdx ? b : a; });
+      var tu = doc.txs[ult];
+      var mesUlt = (tu.data && parseInt(tu.data.slice(8,10),10)===DIA_VENCIMENTO_CARTAO) ? tu.data.slice(0,7) : tu.mesLinha;
+      var gid = "imp-"+Date.now()+"-"+Math.random().toString(36).slice(2,7);
+      idxs.forEach(function(i){
+        var t = doc.txs[i];
+        t.mesLinha = addMonthsToKey(mesUlt, t.parcelaIdx-tu.parcelaIdx);
+        t.grupoParcela = gid;
+        t.geraFuturas = (i===ult);
+      });
+    });
+  }
+
   function startImport(doc){
+    if(doc.kind==="misto") prepararMisto(doc);
     var pos = 0, neg = 0;
     doc.txs.forEach(function(t){ if(t.amount>0) pos++; else if(t.amount<0) neg++; });
     var faturaKey = doc.faturaMonth ? mesKeyOf(doc.faturaMonth) : null;
@@ -2553,7 +2600,7 @@
       doc: doc,
       outflowSign: doc.outflowSign || (neg>pos ? -1 : 1),
       kind: doc.kind,
-      aloc: doc.kind==="cartao" ? "mes" : "data",
+      aloc: doc.kind==="cartao" ? "mes" : doc.kind==="misto" ? "linha" : "data",
       mesKey: faturaKey || (doc.kind==="cartao" ? estimateFaturaMonthKey(doc.txs) : viewedMonthKey()),
       mesEstimado: !faturaKey && doc.kind==="cartao",
       rowState: doc.txs.map(function(){ return {}; })
@@ -2581,12 +2628,25 @@
       var st = IMPORT.rowState[i];
       var isCredit = Math.sign(tx.amount)!==IMPORT.outflowSign;
       var valor = Math.round(Math.abs(tx.amount)*100)/100 * (isCredit ? -1 : 1);
-      var mesKey = (IMPORT.aloc==="data" && tx.data) ? tx.data.slice(0,7) : IMPORT.mesKey;
+      var mesKey = (IMPORT.aloc==="data" && tx.data) ? tx.data.slice(0,7) : IMPORT.aloc==="linha" ? tx.mesLinha : IMPORT.mesKey;
       var n = normalizeText(tx.desc);
       var reasons = [], info = [];
+      var misto = IMPORT.kind==="misto";
+      if(misto && isCredit && tx.meio!=="cartao"){
+        // entrada da planilha (Pix recebido, salário…) vai para Entradas do mês
+        var vE = Math.abs(valor);
+        var jaE = entradasLista().some(function(x){ return x.data===tx.data && Math.abs((Number(x.valor)||0)-vE)<0.005; });
+        return { tx: tx, i: i, valor: vE, mesKey: tx.data ? tx.data.slice(0,7) : mesKey, entrada: true,
+          reasons: jaE ? ["já lançado"] : [], info: ["entrada → vai para Entradas"],
+          checked: st.checked!=null ? st.checked : !jaE, desc: st.desc!=null ? st.desc : tx.desc,
+          categoria: "", tipo: "", learned: false };
+      }
+      if(misto) info.push(tx.meio==="cartao" ? "cartão · fatura de "+mesLabelOf(isoToDate(mesKey+"-01")) : "débito (conta)");
+      if(misto && /pago\s*maikon/i.test(tx.tipoPlanilha||"")) info.push("pago pelo Maikon");
+      if(misto && tx.grupoParcela && !tx.geraFuturas) info.push("parcela da mesma compra (sem repetir)");
       if(isCredit){
         // estorno abate o gasto (entra negativo); entrada de dinheiro na conta não é gasto
-        if((IMPORT.kind==="cartao" && !/pagamento|pagto|pgto/.test(n)) || /^estorno/.test(n)) info.push("estorno (abate do total)");
+        if(((IMPORT.kind==="cartao" || (misto && tx.meio==="cartao")) && !/pagamento|pagto|pgto/.test(n)) || /^estorno/.test(n)) info.push("estorno (abate do total)");
         else reasons.push("entrada");
       }
       if(!isCredit && IMPORT.doc.holder && /^pix( automatico)? enviado/.test(n)){
@@ -2630,12 +2690,13 @@
         '<td class="col-check"><input type="checkbox" class="fp-check"'+(r.checked?" checked":"")+'></td>'+
         '<td class="col-fp-data">'+escapeXml(formatIsoBR(tx.data))+'</td>'+
         '<td><input class="fp-desc" type="text" value="'+escapeAttr(r.desc)+'">'+(tags?'<div class="imp-tags">'+tags+'</div>':'')+'</td>'+
+        (r.entrada ? '<td colspan="2" class="ch-sub">Entrada</td>' :
         '<td><select class="fp-categoria">'+categoriaOptions(r.categoria)+'</select></td>'+
         '<td><select class="fp-tipo">'+
           '<option value="fixo"'+(r.tipo==="fixo"?" selected":"")+'>Fixo</option>'+
           '<option value="superfluo"'+(r.tipo==="superfluo"?" selected":"")+'>Supérfluo</option>'+
-        '</select></td>'+
-        '<td class="col-fp-valor'+(r.valor<0?" is-credit":"")+'">'+formatMoney(r.valor)+'</td>'+
+        '</select></td>')+
+        '<td class="col-fp-valor'+(r.valor<0||r.entrada?" is-credit":"")+'">'+(r.entrada?"+ ":"")+formatMoney(r.valor)+'</td>'+
         '<td class="col-fp-parcela">'+parcela+'</td>'+
       '</tr>';
     }).join("");
@@ -2648,7 +2709,20 @@
     if(dups) warnings += '<div class="fatura-check-row">'+dups+' lançamento(s) já existem no sistema (importação anterior ou parcela gerada antes) e ficaram desmarcados para não duplicar.</div>';
 
     var mesInputVal = IMPORT.mesKey;
-    previewEl.innerHTML =
+    var misto = IMPORT.kind==="misto";
+    previewEl.innerHTML = misto ?
+      '<div class="imp-options"><span class="ch-sub">Planilha com cartão e conta: cada linha vai para o seu mês — cartão no mês da fatura (fecha dia '+DIA_FECHAMENTO_CARTAO+', vence dia '+DIA_VENCIMENTO_CARTAO+'), débito no mês da data, entradas em Entradas.</span></div>'+
+      '<p class="empty-note">'+escapeXml(doc.source)+' · '+escapeXml(doc.fileName||"")+' · '+rows.length+' lançamento(s) encontrados.</p>'+
+      warnings+
+      '<div class="table-wrap"><table class="fatura-preview-table">'+
+      '<thead><tr><th class="col-check"><input type="checkbox" id="fp-check-all" title="Marcar/desmarcar todos"></th><th>Data</th><th>Descrição</th><th>Categoria</th><th>Tipo</th><th class="col-fp-valor">Valor</th><th>Parcela</th></tr></thead>'+
+      '<tbody>'+rowsHtml+'</tbody></table></div>'+
+      '<div class="fatura-check-row" id="fatura-check-row"></div>'+
+      '<div class="import-controls">'+
+        '<button id="fatura-confirm-btn" class="btn-add" type="button">Importar</button>'+
+        '<button id="fatura-cancel-btn" class="btn-ghost" type="button">Cancelar</button>'+
+      '</div>'
+      :
       '<div class="imp-options">'+
         '<label>Tipo de arquivo <select id="imp-kind">'+
           '<option value="conta"'+(IMPORT.kind==="conta"?" selected":"")+'>Extrato de conta</option>'+
@@ -2675,13 +2749,16 @@
 
     function recompute(){
       var total = 0, count = 0, meses = {}, aMao = 0, nAMao = 0;
+      var totE = 0, nE = 0;
       rows.forEach(function(r){
-        if(r.checked){ total += r.valor; count++; meses[r.mesKey] = true; }
+        if(r.checked && r.entrada){ totE += r.valor; nE++; count++; meses[r.mesKey] = true; }
+        else if(r.checked){ total += r.valor; count++; meses[r.mesKey] = true; }
         else if(r.reasons.indexOf("já lançado à mão")>-1){ aMao += r.valor; nAMao++; }
       });
       var checkEl = document.getElementById("fatura-check-row");
       var stated = doc.total;
-      var txt = "Soma dos "+count+" item(ns) selecionado(s): "+formatMoney(total)+
+      var txt = "Soma dos "+(count-nE)+" gasto(s) selecionado(s): "+formatMoney(total)+
+        (nE ? " · "+nE+" entrada(s): "+formatMoney(totE) : "")+
         (nAMao ? " + "+formatMoney(aMao)+" já lançado(s) à mão ("+nAMao+")" : "");
       if(stated!=null){
         var match = Math.abs(total+aMao-stated) < 0.01;
@@ -2726,16 +2803,16 @@
       tbody.querySelectorAll("tr").forEach(function(tr){ tr.querySelector(".fp-check").checked = on; tr.classList.toggle("is-off", !on); });
       recompute();
     });
-    document.getElementById("imp-kind").addEventListener("change", function(e){
+    if(!misto) document.getElementById("imp-kind").addEventListener("change", function(e){
       IMPORT.kind = e.target.value;
       IMPORT.aloc = IMPORT.kind==="cartao" ? "mes" : "data";
       renderImportPreview();
     });
-    document.getElementById("imp-aloc").addEventListener("change", function(e){ IMPORT.aloc = e.target.value; renderImportPreview(); });
-    document.getElementById("imp-mes").addEventListener("change", function(e){
+    if(!misto) document.getElementById("imp-aloc").addEventListener("change", function(e){ IMPORT.aloc = e.target.value; renderImportPreview(); });
+    if(!misto) document.getElementById("imp-mes").addEventListener("change", function(e){
       if(/^\d{4}-\d{2}$/.test(e.target.value)){ IMPORT.mesKey = e.target.value; IMPORT.mesEstimado = false; renderImportPreview(); }
     });
-    document.getElementById("imp-invert").addEventListener("click", function(){
+    if(!misto) document.getElementById("imp-invert").addEventListener("click", function(){
       IMPORT.outflowSign = -IMPORT.outflowSign;
       IMPORT.rowState.forEach(function(st){ delete st.checked; });
       renderImportPreview();
@@ -2749,16 +2826,19 @@
     var tx = r.tx;
     var total = tx.parcelaTotal || 1, startIdx = tx.parcelaIdx || 1;
     if(total<2 || startIdx>total){ total = 1; startIdx = 1; }
-    var groupId = total>1 ? ("imp-"+Date.now()+"-"+Math.random().toString(36).slice(2,7)) : null;
+    var groupId = total>1 ? (tx.grupoParcela || ("imp-"+Date.now()+"-"+Math.random().toString(36).slice(2,7))) : null;
+    // planilha mista: parcela anterior de uma compra que já aparece de novo na planilha não cria as próximas
+    var ate = (tx.grupoParcela && !tx.geraFuturas) ? startIdx : total;
+    var meio = tx.meio==="cartao" ? "cartao" : tx.meio==="conta" ? "conta" : (IMPORT.kind==="cartao" ? "cartao" : "conta");
     var out = [];
-    for(var k=startIdx; k<=total; k++){
+    for(var k=startIdx; k<=ate; k++){
       out.push({
         desc: (r.desc||"").trim() || tx.desc, descOriginal: tx.desc,
         categoria: r.categoria, tipo: r.tipo, valor: r.valor, isExample:false,
         createdAt: Date.now() + (importSeq++), mesRef: addMonthsToKey(r.mesKey, k-startIdx),
         parcelaTotal: total, parcelaIndex: k, parcelaGrupo: groupId,
         data: k===startIdx ? (tx.data || null) : null,
-        origem: source, meio: IMPORT.kind==="cartao" ? "cartao" : "conta"
+        origem: source, meio: meio
       });
     }
     // parcela futura que já existe (criada por uma importação anterior) não é criada de novo
@@ -2788,9 +2868,13 @@
   }
 
   function confirmImport(rows){
-    var selected = rows.filter(function(r){ return r.checked; })
+    var todosSel = rows.filter(function(r){ return r.checked; });
+    if(!todosSel.length) return;
+    // entradas da planilha mista vão para Entradas (renda do mês)
+    var ents = todosSel.filter(function(r){ return r.entrada; });
+    if(ents.length) store.addEntradas(ents.map(function(r, k){ return { desc: (r.desc||"").trim() || r.tx.desc, valor: r.valor, data: r.tx.data, createdAt: Date.now()+k, origem: IMPORT.doc.source }; }));
+    var selected = todosSel.filter(function(r){ return !r.entrada; })
       .sort(function(a,b){ return String(a.tx.data||"").localeCompare(String(b.tx.data||"")); });
-    if(!selected.length) return;
     var payloads = [], futuras = 0, meses = {};
     var index = buildDedupeIndex();
     selected.forEach(function(r){
@@ -2807,8 +2891,9 @@
     resetImportUI();
     showImportArea(true);
     document.getElementById("fatura-status").textContent =
+      (ents.length ? "✓ "+ents.length+" entrada(s) lançada(s). " : "")+
       "✓ "+selected.length+" gasto(s) importado(s) e salvo(s)"+
-      (mesesList.length===1 ? " em "+mesLabelOf(isoToDate(mesesList[0]+"-01")) : ", distribuídos entre "+mesLabelOf(isoToDate(mesesList[0]+"-01"))+" e "+mesLabelOf(isoToDate(mesesList[mesesList.length-1]+"-01")))+
+      (!mesesList.length ? "" : mesesList.length===1 ? " em "+mesLabelOf(isoToDate(mesesList[0]+"-01")) : ", distribuídos entre "+mesLabelOf(isoToDate(mesesList[0]+"-01"))+" e "+mesLabelOf(isoToDate(mesesList[mesesList.length-1]+"-01")))+
       (futuras ? " — mais "+futuras+" parcela(s) futura(s) já lançada(s) nos meses seguintes." : ".");
   }
 
