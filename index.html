@@ -398,6 +398,15 @@
   .meio-btn[aria-pressed="true"]{ background:var(--surface); color:var(--text-primary); box-shadow:var(--shadow); }
   .lbl-short{ display:none; }
   @media (max-width:640px){ .meio-btn .lbl-full{ display:none; } .meio-btn .lbl-short{ display:inline; } }
+  .reemb-btn{ border:1px solid var(--border, #e5e7eb); background:var(--surface, #fff); color:var(--text-primary); border-radius:10px; padding:8px 12px; font:inherit; font-size:13px; font-weight:700; cursor:pointer; }
+  .reemb-btn[aria-pressed="true"]{ background:#0f766e; border-color:#0f766e; color:#fff; }
+  .reemb-bar{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; background:#f0fdfa; border:1px solid #99f6e4; border-radius:12px; padding:10px 14px; margin:10px 0; }
+  .reemb-bar small{ display:block; color:var(--text-secondary, #64748b); font-size:12px; }
+  .reemb-acoes{ display:flex; gap:8px; flex-wrap:wrap; } .reemb-acoes .btn-add{ text-decoration:none; display:inline-flex; align-items:center; }
+  .btn-reemb{ border:0; background:none; cursor:pointer; opacity:.3; font-size:15px; padding:2px 4px; } .btn-reemb.on{ opacity:1; }
+  .col-acoes{ white-space:nowrap; }
+  .fld-reemb, .wiz-reemb{ display:flex; align-items:center; gap:8px; font-weight:700; font-size:14px; margin:8px 0; cursor:pointer; } .fld-reemb small, .wiz-reemb small{ font-weight:400; color:var(--text-secondary, #64748b); }
+  .fld-reemb input, .wiz-reemb input{ width:20px; height:20px; accent-color:#0f766e; }
   .meio-btn:focus-visible{ outline:2px solid var(--fixo); outline-offset:2px; }
   .input-meio{ width:100%; border:1px solid transparent; background:transparent; border-radius:8px; padding:7px 4px; font-size:13px; color:var(--text-secondary); cursor:pointer; }
   .input-meio:hover{ border-color:var(--border); }
@@ -704,6 +713,7 @@
         <button type="button" class="meio-btn" data-meio="cartao" aria-pressed="false"><span class="lbl-full">Cartão de crédito</span><span class="lbl-short">Cartão</span></button>
         <button type="button" class="meio-btn" data-meio="conta" aria-pressed="false">Débito</button>
       </div>
+      <button type="button" class="reemb-btn" id="btn-filtro-reemb" aria-pressed="false">↩️ Reembolso</button>
       <div class="month-nav" role="group" aria-label="Navegação de mês">
         <button type="button" id="mes-prev" class="btn-ghost" aria-label="Mês anterior">‹</button>
         <div class="month-nav-label" id="mes-nav-label">—</div>
@@ -713,6 +723,7 @@
       </div>
     </div>
 
+    <div class="reemb-bar" id="reemb-bar" hidden></div>
     <div class="summary-row only-desktop" id="summary-row-1"></div>
 
     <div class="only-mobile">
@@ -910,6 +921,7 @@
             <option value="outro">Dinheiro / outro</option>
           </select>
         </label>
+        <label class="fld-reemb"><input type="checkbox" id="m-reemb"> ↩️ É reembolso <small>(paguei e alguém vai me devolver)</small></label>
       </div>
       <p class="fld-erro" id="m-erro" role="alert"></p>
       <div class="sheet-actions">
@@ -1035,9 +1047,30 @@
   }
   var FILTRO_LABEL = { "":"cartão + débito", cartao:"só cartão de crédito", conta:"só débito (conta corrente)" };
 
+  // Maikon 13/11: filtro "↩️ Reembolso" nos Lançamentos (só os marcados como reembolso) + copiar / mandar no WhatsApp
+  var soReembolso = false;
   function itemsForViewedMonth(){
     var key = viewedMonthKey();
-    return STATE.items.filter(function(it){ return effectiveMonthKey(it)===key && (!meioFiltro || meioOf(it)===meioFiltro); });
+    return STATE.items.filter(function(it){ return effectiveMonthKey(it)===key && (!meioFiltro || meioOf(it)===meioFiltro) && (!soReembolso || it.reembolso); });
+  }
+  function textoReembolso(){
+    var L = itemsForViewedMonth().filter(function(it){ return it.reembolso; }).sort(function(a,b){ return String(a.data||"")<String(b.data||"") ? -1 : 1; });
+    var tot = L.reduce(function(s, it){ return s+(Number(it.valor)||0); }, 0);
+    return "*Reembolso — "+mesLabelOf(currentViewMonth)+"*\n\n"+L.map(function(it){ return (it.data ? formatIsoBR(it.data).slice(0,5)+" · " : "")+(it.desc||"(sem descrição)")+" · "+formatMoney(it.valor); }).join("\n")+
+      "\n\n*Total: "+formatMoney(tot)+"* ("+L.length+" gasto"+(L.length===1?"":"s")+")";
+  }
+  function renderReembBar(){
+    var el = document.getElementById("reemb-bar"), bt = document.getElementById("btn-filtro-reemb"); if(bt) bt.setAttribute("aria-pressed", String(soReembolso));
+    if(!el) return;
+    if(!soReembolso){ el.hidden = true; el.innerHTML = ""; return; }
+    var L = itemsForViewedMonth(), tot = L.reduce(function(s, it){ return s+(Number(it.valor)||0); }, 0);
+    el.hidden = false;
+    el.innerHTML = '<div><b>↩️ Reembolsos de '+escapeXml(mesLabelOf(currentViewMonth).toLowerCase())+'</b><small>'+L.length+' gasto'+(L.length===1?'':'s')+' · '+formatMoney(tot)+'</small></div>'+
+      (L.length ? '<div class="reemb-acoes"><button type="button" class="btn-ghost" id="reemb-copiar">📋 Copiar</button><a class="btn-add" id="reemb-wa" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(textoReembolso())+'">📤 Mandar no WhatsApp</a></div>' : '<small>Nenhum gasto marcado como reembolso neste mês. Marque no lançamento (caixinha ↩️).</small>');
+    var cp = document.getElementById("reemb-copiar");
+    if(cp) cp.addEventListener("click", function(){ var t = textoReembolso();
+      (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function(){ cp.textContent = "✅ Copiado"; setTimeout(function(){ cp.textContent = "📋 Copiar"; }, 1800); })
+        .catch(function(){ var ta = document.createElement("textarea"); ta.value = t; document.body.appendChild(ta); ta.select(); try{ document.execCommand("copy"); cp.textContent = "✅ Copiado"; }catch(e){} ta.remove(); }); });
   }
 
   /* ---------- persistence layer ---------- */
@@ -1299,8 +1332,12 @@
       '<td class="col-meio"><select class="input-meio" title="Pago com">'+meioOptions(meioOf(item))+'</select></td>' +
       '<td class="col-valor"><div class="money-input small"><span>R$</span><input class="input-valor" type="number" min="0" step="0.01" value="'+(Number(item.valor)||0)+'"></div></td>' +
       '<td class="col-parcelas">'+parcelasCellHtml(item)+'</td>' +
-      '<td><button class="btn-del" aria-label="Remover linha" title="Remover">✕</button></td>';
+      '<td class="col-acoes"><button class="btn-reemb'+(item.reembolso?' on':'')+'" title="Marcar como reembolso">↩️</button><button class="btn-del" aria-label="Remover linha" title="Remover">✕</button></td>';
     tbody.appendChild(tr);
+    tr.querySelector(".btn-reemb").addEventListener("click", function(){
+      var it = STATE.items.find(function(x){ return x.id===item.id; }); if(!it) return;
+      it.reembolso = !it.reembolso; store.updateItem(item.id, { reembolso: it.reembolso || null }); refreshMonthView();
+    });
 
     var dataInput = tr.querySelector(".input-data");
     var descInput = tr.querySelector(".input-desc");
@@ -1900,6 +1937,9 @@
     });
   });
 
+  var btnReemb = document.getElementById("btn-filtro-reemb");
+  if(btnReemb) btnReemb.addEventListener("click", function(){ soReembolso = !soReembolso; refreshMonthView(); });
+
   document.querySelectorAll(".view-btn").forEach(function(btn){
     btn.addEventListener("click", function(){
       if(viewMode===btn.dataset.mode) return;
@@ -1923,6 +1963,7 @@
   }
 
   function refreshMonthView(){
+    try{ renderReembBar(); }catch(e){}
     var tbodyLanc = document.getElementById("tbody-lanc");
     if(tbodyLanc) tbodyLanc.innerHTML = "";
     rowsById = {};
@@ -3289,6 +3330,7 @@
         if(it.data) meta.push(formatIsoBR(it.data).slice(0,5));
         if((Number(it.parcelaTotal)||1)>1) meta.push("parcela "+it.parcelaIndex+"/"+it.parcelaTotal);
         if(it.recorrente) meta.push("mensal");
+        if(it.reembolso) meta.push("↩️ reembolso");
         return '<li><button type="button" class="m-item" data-id="'+escapeAttr(it.id)+'" aria-label="'+escapeAttr((it.desc||"Sem descrição")+", "+formatMoney(v)+", editar")+'">'+
           '<span class="m-item-main"><span class="m-item-desc">'+escapeXml(it.desc||"(sem descrição)")+'</span>'+
           '<span class="m-item-sub">'+escapeXml(meta.join(" · "))+'</span></span>'+
@@ -3355,6 +3397,7 @@
     var ultimoMeio = "cartao";
     try{ ultimoMeio = localStorage.getItem("orcamento-ultimo-meio") || "cartao"; } catch(e){}
     mForm.meio.value = it ? (meioOf(it) || "outro") : (meioFiltro || ultimoMeio);
+    var rb = document.getElementById("m-reemb"); if(rb) rb.checked = !!(it && it.reembolso);
     mUpdateParcHint();
     if(typeof mForm.dlg.showModal==="function") mForm.dlg.showModal(); else mForm.dlg.setAttribute("open","");
     if(!it) setTimeout(function(){ mForm.desc.focus(); }, 50);
@@ -3394,7 +3437,7 @@
     if(mForm.editId){
       var it = STATE.items.find(function(x){ return x.id===mForm.editId; });
       if(it){
-        var patch = { desc:desc, categoria:categoria, tipo:tipo, valor:valor, data:data, meio:meio };
+        var patch = { desc:desc, categoria:categoria, tipo:tipo, valor:valor, data:data, meio:meio, reembolso: !!(document.getElementById("m-reemb")||{}).checked || null };
         Object.assign(it, patch);
         store.updateItem(it.id, patch);
         if(!mForm.parc.disabled && n>1) store.setParcelas(it.id, n);
@@ -3406,7 +3449,7 @@
       for(var k=0;k<n;k++){
         payloads.push({ desc:desc, categoria:categoria, tipo:tipo, valor:valor, isExample:false, createdAt: Date.now()+k,
           mesRef: addMonthsToKey(key, k), parcelaTotal:n, parcelaIndex:k+1, parcelaGrupo:grupo,
-          data: k===0 ? data : null, origem:"manual", meio:meio });
+          data: k===0 ? data : null, origem:"manual", meio:meio, reembolso: !!(document.getElementById("m-reemb")||{}).checked || null });
       }
       persistNewItems(payloads);
     }
@@ -3762,8 +3805,10 @@
 
     if(passo==="meio"){
       b.innerHTML = '<h2 class="wiz-q" id="wiz-title">Pagou com?</h2>'+chips()+
+        '<label class="wiz-reemb"><input type="checkbox" id="wiz-reemb"'+(W.reembolso?' checked':'')+'> ↩️ É reembolso <small>(paguei e alguém vai me devolver)</small></label>'+
         '<button type="button" class="wiz-big" data-meio="cartao">💳 Cartão de crédito</button>'+
         '<button type="button" class="wiz-big" data-meio="conta">🏦 Conta corrente<small>débito, Pix</small></button>';
+      var wr = document.getElementById("wiz-reemb"); if(wr) wr.addEventListener("change", function(){ W.reembolso = wr.checked; });
       b.querySelectorAll(".wiz-big").forEach(function(btn){ btn.addEventListener("click", function(){ W.meio = btn.dataset.meio; salvarOuAvisar(); }); });
       return;
     }
@@ -3911,6 +3956,7 @@
         mesRef: mesDoVencimento(dt, W.meio), parcelaTotal:1, parcelaIndex:1, parcelaGrupo:null,
         data: dt, origem:"manual", meio: W.meio
       };
+      if(W.reembolso) pl.reembolso = true;
       if(repete){ pl.recorrente = true; pl.recGrupo = grupo; }
       return pl;
     }));
